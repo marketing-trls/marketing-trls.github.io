@@ -1338,7 +1338,7 @@ label{font-size:11.5px;margin-bottom:7px}
     Object.entries(o).forEach(([id,v])=>{ if(v===null) out.delete(id); else out.set(id,{...(out.get(id)||{}),...v}); });
     return [...out.entries()].map(([id,d])=>{ const {id:_,...rest}=d; return {id,data:()=>({...rest})}; });
   };
-  const settingsDoc=()=>({...{branches:base.branches||"",hours:base.hours||""},...(over.settings||{})});
+  const settingsDoc=()=>({...{branches:base.branches||"",hours:base.hours||"",folderId:(cfg&&cfg.driveFolderId)||""},...(over.settings||{})});
   const fire=coll=>{ listeners[coll].forEach(f=>{ try{ f(); }catch(e){ console.error(e); } }); };
   const docRef=(coll,id)=>({
     async set(data){ over[coll][id]={...data}; persist(); fire(coll); },
@@ -1352,14 +1352,67 @@ label{font-size:11.5px;margin-bottom:7px}
     }; },
     doc(path){ return {
       async set(data){ over.settings={...data}; persist(); fire("settings"); },
-      onSnapshot(cb,err){ const f=()=>cb({exists:true,data:settingsDoc}); listeners.settings.push(f); loaded.then(f).catch(e=>err&&err(e)); return ()=>{}; }
+      onSnapshot(cb,err){ const f=()=>cb({exists:true,data:settingsDoc}); listeners.settings.push(f); Promise.all([loaded,cfgLoaded]).then(f).catch(e=>err&&err(e)); return ()=>{}; }
     }; }
   };
   const downloads={ async save({filename,data}){ const blob=data instanceof Blob?data:new Blob([data],{type:/\.json$/.test(filename)?"application/json":/\.html$/.test(filename)?"text/html":/\.csv$/.test(filename)?"text/csv":"application/octet-stream"});
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); } };
+
+  /* Google Drive on the website: sign in with Google in the browser and read the upload folder through the Drive API.
+     Needs an OAuth client ID in data/site-config.json (googleClientId). The access token stays in this tab only. */
+  let cfg={};
+  const cfgLoaded=fetch("data/site-config.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(c=>{ cfg=c||{}; if(cfg.googleClientId) loadGsi(); return cfg; });
+  window.__SITE_CFG=()=>cfg;
+  const SCOPE="https://www.googleapis.com/auth/drive.readonly";
+  let gsi=null, tok=null;
+  try{ const t=JSON.parse(sessionStorage.getItem("trs-drive-token")||"null"); if(t&&t.exp>Date.now()+60e3) tok=t; }catch{}
+  function loadGsi(){ if(gsi) return gsi; gsi=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="https://accounts.google.com/gsi/client"; sc.async=true; sc.onload=()=>res(window.google); sc.onerror=()=>rej({code:"site_gsi"}); document.head.appendChild(sc); }); return gsi; }
+  function signIn(){
+    return new Promise(async(res,rej)=>{
+      try{ await loadGsi(); }catch(e){ rej(e); return; }
+      const client=google.accounts.oauth2.initTokenClient({client_id:cfg.googleClientId,scope:SCOPE,prompt:"",
+        callback:r=>{ if(r&&r.access_token){ tok={t:r.access_token,exp:Date.now()+(Number(r.expires_in)||3600)*1000}; try{ sessionStorage.setItem("trs-drive-token",JSON.stringify(tok)); }catch{} res(tok.t); } else rej({code:"site_denied"}); },
+        error_callback:e=>rej({code:e&&e.type==="popup_closed"?"site_denied":"site_popup"})});
+      client.requestAccessToken();
+    });
+  }
+  async function token(){
+    await cfgLoaded;
+    if(!cfg.googleClientId) throw {code:"site_no_client"};
+    if(tok&&tok.exp>Date.now()+60e3) return tok.t;
+    if(navigator.userActivation&&!navigator.userActivation.isActive) throw {code:"site_signin"};
+    return signIn();
+  }
+  window.__SITE_DRIVE_CONNECTED=()=>!!(tok&&tok.exp>Date.now()+60e3);
+  window.__SITE_DRIVE_SIGNIN=async()=>{ await cfgLoaded; if(!cfg.googleClientId) throw {code:"site_no_client"}; return signIn(); };
+  async function api(path,opts={}){
+    let t=await token();
+    let r=await fetch("https://www.googleapis.com/drive/v3/"+path,{headers:{Authorization:"Bearer "+t}});
+    if(r.status===401){ tok=null; try{ sessionStorage.removeItem("trs-drive-token"); }catch{} throw {code:"site_signin"}; }
+    if(!r.ok){ let m=""; try{ m=(await r.json()).error.message; }catch{} throw {code:"tool_error",message:m||("error "+r.status)}; }
+    return opts.blob?r:r.json();
+  }
+  const b64=blob=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(",")[1]||""); fr.onerror=()=>rej({code:"tool_error",message:"could not read the file"}); fr.readAsDataURL(blob); });
+  const mcp={ async callTool(server,tool,input){
+    if(tool==="search_files"){
+      const q=String(input.query||"").replace(/parentId\s*=\s*'([^']+)'/g,"'$1' in parents").replace(/\btitle contains\b/g,"name contains")+" and trashed = false";
+      const qs=new URLSearchParams({q,pageSize:String(Math.min(input.pageSize||50,100)),fields:"nextPageToken,files(id,name,mimeType,size,modifiedTime,createdTime)",supportsAllDrives:"true",includeItemsFromAllDrives:"true"});
+      if(input.pageToken) qs.set("pageToken",input.pageToken);
+      const j=await api("files?"+qs);
+      return {payload:{nextPageToken:j.nextPageToken,files:(j.files||[]).map(f=>({id:f.id,title:f.name,name:f.name,mimeType:f.mimeType,fileSize:f.size?Number(f.size):0,modifiedTime:f.modifiedTime,createdTime:f.createdTime}))}};
+    }
+    if(tool==="download_file_content"){
+      const meta=await api("files/"+encodeURIComponent(input.fileId)+"?fields=name,mimeType&supportsAllDrives=true");
+      const isG=String(meta.mimeType||"").startsWith("application/vnd.google-apps");
+      const r=await api("files/"+encodeURIComponent(input.fileId)+(isG?"/export?mimeType="+encodeURIComponent(input.exportMimeType||"text/csv"):"?alt=media&supportsAllDrives=true"),{blob:true});
+      const blob=await r.blob();
+      return {payload:{title:meta.name,mimeType:isG?(input.exportMimeType||"text/csv"):meta.mimeType,content:await b64(blob)}};
+    }
+    throw {code:"tool_error",message:"not available on the website"};
+  } };
   window.__SITE_HAS_EDITS=()=>Object.keys(over.posts).length+Object.keys(over.campaigns).length+(over.settings?1:0);
   window.__SITE_RESET=()=>{ try{ localStorage.removeItem(KEY); }catch{} location.reload(); };
-  window.claude={ async use(name){ if(name==="db") return db; if(name==="downloads") return downloads; if(name==="user") return {can:async()=>true}; return null; } };
+  window.claude={ async use(name){ if(name==="db") return db; if(name==="downloads") return downloads; if(name==="user") return {can:async()=>true}; if(name==="mcp") return mcp; return null; } };
 })();
 </script>
 <script>
@@ -1561,7 +1614,7 @@ function siteStatus(){
   const t=window.__SITE_DATA&&new Date(window.__SITE_DATA.exportedAt);
   const when=t&&!isNaN(t)?t.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Dubai"}):"";
   setStatus(`<span class="site-note"><b>Website planner.</b> Plan published ${esc(when)}${window.__SITE_BUILTIN?" (built-in copy)":""}. ${n?`You have <b>${n} edit${n===1?"":"s"}</b> saved in this browser only.`:"Edits you make here save in this browser."}
-    For Drive sync and Claude writing, <a href="${PLANNER_URL}" target="_blank" rel="noopener">open the planner in Claude</a>.</span>
+    ${window.__SITE_DRIVE_CONNECTED&&window.__SITE_DRIVE_CONNECTED()?"Google Drive is connected.":"Use <b>Sync with Drive</b> to pull new photos (you sign in to Google the first time)."} For Claude writing, <a href="${PLANNER_URL}" target="_blank" rel="noopener">open the planner in Claude</a>.</span>
     ${n?`<span class="bar"><button class="ghost" id="siteExport">Export for website</button><button class="ghost" id="siteReset">Discard my edits</button></span>`:""}${window.__SITE_SAVED_ERR?`<span class="site-err">This browser is full, so the last edit was not kept. Export now.</span>`:""}`);
   const ex=$("#siteExport"); if(ex) ex.onclick=()=>$("#packExport").click();
   const rs=$("#siteReset"); if(rs) rs.onclick=()=>{ if(rs.dataset.c!=="1"){ rs.dataset.c="1"; rs.textContent="Click again to discard"; setTimeout(()=>{rs.dataset.c="";rs.textContent="Discard my edits";},4000); return; } window.__SITE_RESET(); };
@@ -1962,6 +2015,11 @@ async function swapTimes(a,b){
 /* ---------- Drive ---------- */
 function driveError(e){
   const c=e?.code;
+  if(c==="site_no_client") return "Drive sync on the website needs a one-time Google setup first. Until then, sync in the planner in Claude.";
+  if(c==="site_signin") return "Click Sync with Drive and sign in to Google to continue.";
+  if(c==="site_denied") return "Google sign-in was cancelled. Click Sync with Drive to try again.";
+  if(c==="site_popup") return "Your browser blocked the Google sign-in window. Allow pop-ups for this site, then click Sync with Drive again.";
+  if(c==="site_gsi") return "Google sign-in could not load. Check your connection and try again.";
   if(c==="server_not_connected"||c==="selection_required") return "Google Drive is not connected for you. Add it in claude.ai Settings → Connectors, then reload.";
   if(c==="needs_reauth") return "Google Drive needs reconnecting. Reconnect it in claude.ai Settings → Connectors.";
   if(c==="not_in_manifest") return "Google Drive access is turned off for this page. Turn it on in the page's Permissions menu.";
@@ -2643,7 +2701,7 @@ setView(view);
   if(u){ const w=await u.can("data.write").catch(()=>null); if(w===false) canWrite=false; }
   if(!canWrite){ $("#syncBtn").hidden=true; $("#saveSettings").disabled=true; }
   setStatus("");
-  if(window.__SITE){ $("#syncBtn").hidden=true; siteStatus(); } else if(!mcp) setStatus("Google Drive is not available in this view, so files cannot be synced here. Existing posts can still be edited.","warn");
+  if(window.__SITE){ siteStatus(); } else if(!mcp) setStatus("Google Drive is not available in this view, so files cannot be synced here. Existing posts can still be edited.","warn");
   let gotSettings=false,gotPosts=false;
   const ready=()=>{ if(gotSettings&&gotPosts) autoCheck(); };
   db.doc("settings/main").onSnapshot(snap=>{ settings=snap.exists?snap.data():{}; fillSettings(); gotSettings=true; ready(); if(gotPosts) render(); },e=>setStatus("Settings could not load. Reload the page.","bad"));
