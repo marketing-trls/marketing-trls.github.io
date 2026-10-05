@@ -1370,15 +1370,15 @@ label{font-size:11.5px;margin-bottom:7px}
   let cfg={};
   const cfgLoaded=fetch("data/site-config.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(c=>{ cfg=c||{}; if(cfg.googleClientId) loadGsi().catch(()=>{ gsi=null; }); return cfg; });
   window.__SITE_CFG=()=>cfg;
-  const SCOPE="https://www.googleapis.com/auth/drive.readonly";
+  const SCOPE="openid email https://www.googleapis.com/auth/drive.readonly";
   let gsi=null, tok=null;
-  try{ const t=JSON.parse(sessionStorage.getItem("trs-drive-token")||"null"); if(t&&t.exp>Date.now()+60e3) tok=t; }catch{}
+  try{ const t=JSON.parse(sessionStorage.getItem("trs-google-token-v2")||"null"); if(t&&t.exp>Date.now()+60e3) tok=t; }catch{}
   function loadGsi(){ if(gsi) return gsi; gsi=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="https://accounts.google.com/gsi/client"; sc.async=true; sc.onload=()=>res(window.google); sc.onerror=()=>rej({code:"site_gsi"}); document.head.appendChild(sc); }); return gsi; }
   function signIn(){
     return new Promise(async(res,rej)=>{
       try{ await loadGsi(); }catch(e){ rej(e); return; }
       const client=google.accounts.oauth2.initTokenClient({client_id:cfg.googleClientId,scope:SCOPE,prompt:"",
-        callback:r=>{ if(r&&r.access_token){ tok={t:r.access_token,exp:Date.now()+(Number(r.expires_in)||3600)*1000}; try{ sessionStorage.setItem("trs-drive-token",JSON.stringify(tok)); }catch{} res(tok.t); } else rej({code:"site_denied"}); },
+        callback:r=>{ if(r&&r.access_token){ tok={t:r.access_token,exp:Date.now()+(Number(r.expires_in)||3600)*1000}; try{ sessionStorage.setItem("trs-google-token-v2",JSON.stringify(tok)); }catch{} res(tok.t); } else rej({code:"site_denied"}); },
         error_callback:e=>rej({code:e&&e.type==="popup_closed"?"site_denied":"site_popup"})});
       client.requestAccessToken();
     });
@@ -1395,7 +1395,7 @@ label{font-size:11.5px;margin-bottom:7px}
   async function api(path,opts={}){
     let t=await token();
     let r=await fetch("https://www.googleapis.com/drive/v3/"+path,{headers:{Authorization:"Bearer "+t}});
-    if(r.status===401){ tok=null; try{ sessionStorage.removeItem("trs-drive-token"); }catch{} throw {code:"site_signin"}; }
+    if(r.status===401){ tok=null; try{ sessionStorage.removeItem("trs-google-token-v2"); }catch{} throw {code:"site_signin"}; }
     if(!r.ok){ let m=""; try{ m=(await r.json()).error.message; }catch{} throw {code:"tool_error",message:m||("error "+r.status)}; }
     return opts.blob?r:r.json();
   }
@@ -1418,27 +1418,26 @@ label{font-size:11.5px;margin-bottom:7px}
     throw {code:"tool_error",message:"not available on the website"};
   } };
 
-  /* AI captions on the website. Without a key: copy the prompt into Meta AI, ChatGPT or Claude and paste the reply back.
-     With an Anthropic API key (kept only in this browser): written automatically. */
-  const AKEY="trs-anthropic-key";
-  const apiKey=()=>{ try{ return localStorage.getItem(AKEY)||""; }catch{ return ""; } };
+  /* AI captions on the website. If the salon's captions helper is set up (captionsUrl in data/site-config.json),
+     Claude writes straight away for anyone signed in with a @tararosesalon.com Google account; the API key lives only in the helper.
+     Otherwise: copy the prompt into Meta AI, ChatGPT or Claude and paste the reply back. */
   const toB64=blob=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(",")[1]||""); fr.onerror=rej; fr.readAsDataURL(blob); });
   function parseReply(t){
     t=String(t||"").replace(/```(?:json)?/gi,"").replace(/[“”]/g,'"').replace(/[‘’]/g,"'");
     const a=t.indexOf("{"), b=t.lastIndexOf("}"); if(a<0||b<=a) throw {code:"invalid_json"};
     try{ return JSON.parse(t.slice(a,b+1)); }catch{ throw {code:"invalid_json"}; }
   }
-  async function viaApi(prompt,opts){
-    const content=[];
-    for(const img of (opts&&opts.images)||[]){ try{ content.push({type:"image",source:{type:"base64",media_type:img.type||"image/jpeg",data:await toB64(img)}}); }catch{} }
-    content.push({type:"text",text:prompt});
+  async function viaHelper(prompt,opts){
+    const t=await token();
+    const images=[];
+    for(const img of (opts&&opts.images)||[]){ try{ images.push({media_type:img.type||"image/jpeg",data:await toB64(img)}); }catch{} }
     let r;
-    try{ r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":apiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:4096,messages:[{role:"user",content}]})}); }catch{ throw {code:"site_net"}; }
-    if(r.status===401||r.status===403) throw {code:"site_key"};
+    try{ r=await fetch(cfg.captionsUrl,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+t},body:JSON.stringify({prompt,images})}); }catch{ throw {code:"site_net"}; }
+    if(r.status===401){ tok=null; try{ sessionStorage.removeItem("trs-google-token-v2"); }catch{} throw {code:"site_signin"}; }
+    if(r.status===403) throw {code:"site_forbidden"};
     if(r.status===429) throw {code:"rate_limited"};
     if(!r.ok) throw {code:"site_api"};
-    const j=await r.json(); return parseReply((j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n"));
+    const j=await r.json(); return parseReply(j.text);
   }
   function viaPaste(prompt,opts){
     return new Promise((resolve,reject)=>{
@@ -1453,9 +1452,6 @@ label{font-size:11.5px;margin-bottom:7px}
         <div class="ai-step"><b>3</b><div><p>Copy the AI's whole reply and paste it here.</p>
           <textarea data-reply rows="6" placeholder="Paste the reply here"></textarea>
           <div class="sh-msg err" data-err></div></div></div>
-        <details class="ai-key"><summary>Skip the copying: write automatically</summary>
-          <p class="sub">Add an Anthropic API key from console.anthropic.com and captions are written straight away. It is billed by Anthropic, roughly 1 to 3 US cents per post, and stays only in this browser.</p>
-          <div class="bar"><input type="password" data-key placeholder="sk-ant-..." autocomplete="off" style="flex:1;min-width:200px"><button class="ghost" data-savekey>Save key</button></div></details>
         <div class="bar"><button data-use>Use this reply</button><button class="ghost" data-x>Cancel</button></div></div>`;
       document.body.appendChild(bg);
       const q=s=>bg.querySelector(s), done=()=>{ bg.remove(); if(imgUrl) setTimeout(()=>URL.revokeObjectURL(imgUrl),60000); };
@@ -1463,17 +1459,11 @@ label{font-size:11.5px;margin-bottom:7px}
       q("[data-copy]").onclick=e=>{ const b=e.currentTarget; try{ navigator.clipboard.writeText(prompt).then(()=>{b.textContent="Copied ✓";},()=>{b.textContent="Copy blocked";}); }catch{ b.textContent="Copy blocked"; } setTimeout(()=>b.textContent="Copy prompt",1800); };
       q("[data-use]").onclick=()=>{ try{ const out=parseReply(q("[data-reply]").value); done(); resolve(out); }
         catch{ q("[data-err]").textContent="That doesn't look like the full reply. Copy everything the AI wrote, including the { } brackets, and paste again."; } };
-      q("[data-savekey]").onclick=async()=>{ const k=q("[data-key]").value.trim(); if(!/^sk-/.test(k)){ q("[data-err]").textContent="That key doesn't look right. It starts with sk-ant-."; return; }
-        try{ localStorage.setItem(AKEY,k); }catch{}
-        q("[data-savekey]").textContent="Writing…"; try{ const out=await viaApi(prompt,opts); done(); resolve(out); }
-        catch(e){ try{ localStorage.removeItem(AKEY); }catch{} q("[data-savekey]").textContent="Save key"; q("[data-err]").textContent=e&&e.code==="site_key"?"Anthropic did not accept that key. Check it and try again.":"Could not reach Anthropic. Try again, or use the copy and paste steps."; } };
       q("[data-copy]").focus({preventScroll:true});
     });
   }
-  const sample={ get manual(){ return !apiKey(); }, async limits(){ return {images:true}; },
-    async json(prompt,opts){ return apiKey()?viaApi(prompt,opts):viaPaste(prompt,opts); } };
-  window.__SITE_FORGET_KEY=()=>{ try{ localStorage.removeItem(AKEY); }catch{} };
-  window.__SITE_HAS_KEY=()=>!!apiKey();
+  const sample={ get manual(){ return !cfg.captionsUrl; }, async limits(){ return {images:true}; },
+    async json(prompt,opts){ await cfgLoaded; return cfg.captionsUrl?viaHelper(prompt,opts):viaPaste(prompt,opts); } };
   window.__SITE_HAS_EDITS=()=>Object.keys(over.posts).length+Object.keys(over.campaigns).length+(over.settings?1:0);
   window.__SITE_RESET=()=>{ try{ localStorage.removeItem(KEY); }catch{} location.reload(); };
   window.claude={ async use(name){ if(name==="db") return db; if(name==="downloads") return downloads; if(name==="user") return {can:async()=>true}; if(name==="mcp") return mcp; if(name==="sample") return sample; return null; } };
@@ -2208,8 +2198,9 @@ function captionErr(e){
   if(c==="rate_limited") return "Claude usage limit reached. Basic captions were used. Try again later.";
   if(c==="refused") return "Claude declined this file. Write the captions by hand.";
   if(c==="cancelled") return "Cancelled. Nothing was changed.";
-  if(c==="site_key") return "The Anthropic API key was not accepted. Captions were not changed.";
-  if(c==="site_net"||c==="site_api") return "Could not reach Anthropic. Try again in a minute.";
+  if(c==="site_forbidden") return "Only @tararosesalon.com Google accounts can write captions here. Sign in with your salon account.";
+  if(c==="site_signin") return "Sign in to Google first: click the button again and choose your salon account.";
+  if(c==="site_net"||c==="site_api") return "The captions helper did not answer. Try again in a minute.";
   if(c==="invalid_json"&&window.__SITE) return "That reply could not be read. Try again and paste the AI's whole reply.";
   return "Claude could not write these captions. Try again.";
 }
