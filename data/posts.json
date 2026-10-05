@@ -1,0 +1,725 @@
+{
+ "exportedAt": "2026-10-04T20:20:00Z",
+ "hours": "Open daily 9am to 8pm",
+ "branches": "Mamsha Al Saadiyat | Abu Dhabi\nKhalifa City A | Abu Dhabi\nAl Quoz | Dubai\nMotor City | Dubai",
+ "posts": [
+  {
+   "kind": "image",
+   "thumb": "data:image/jpeg;base64,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",
+   "scheduledAt": "2026-10-06T11:00",
+   "status": "approved",
+   "strategy": "Educational authority builder. Direct answer to a common search question, staged method as expertise signal, soft consultation CTA with no price or promise.",
+   "keyword": "balayage",
+   "specialist": "",
+   "handle": "",
+   "branch": "",
+   "onScreen": "Balayage, done gently.",
+   "altText": "Hand painted balayage colour technique shown at Tara Rose Salon, across its Dubai and Abu Dhabi branches.",
+   "filename": "7d4b58e2-3e96-462c-a48c-ea3f1b10631e.jpeg",
+   "id": "1yWVwWFDc8pwR4d3NA5qUv1zTPc-QmXsU",
+   "platforms": {
+    "facebook": false,
+    "instagram": true,
+    "tiktok": false,
+    "youtube": false
+   },
+   "captions": {
+    "facebook": {
+     "title": "",
+     "hook": "Thinking about balayage in Dubai or Abu Dhabi? Here is how it works.",
+     "body": "Balayage is a hand painted colour technique that builds soft, natural dimension instead of hard lines. At Tara Rose Salon our colourists paint the colour on by hand, section by section, working with the way your hair naturally falls. That is why the result tends to grow out so softly, with no harsh line to chase as the weeks go on. If you are curious whether balayage suits your hair, it is worth starting with a proper consultation rather than guessing from a photo.",
+     "cta": "Our colourists at Tara Rose Salon, across our Dubai and Abu Dhabi salons, are happy to talk you through placement before you commit to anything. Book through the link below to start your hair plan.",
+     "hashtags": "#TaraRoseSalon #Balayage #DubaiHairSalon #AbuDhabiHairSalon"
+    },
+    "gbp": {
+     "posts": []
+    },
+    "instagram": {
+     "title": "",
+     "hook": "Balayage in Dubai and Abu Dhabi, what makes it last so well?",
+     "body": "Balayage is a hand painted colour technique that builds soft, natural dimension rather than hard lines. At Tara Rose Salon our colourists paint colour by hand, section by section, following your hair's natural fall. This is why the result grows out gently, with no sharp regrowth line to chase.",
+     "cta": "Ask our colourists at Tara Rose Salon, across our Dubai and Abu Dhabi salons, which placement suits your hair plan. Tap link in bio → tararosesalon.com to book. Save this for your next colour conversation. 💛",
+     "hashtags": "#TaraRoseSalon #Balayage #DubaiHairSalon #AbuDhabiHairSalon #HairColourist #HandPaintedHair #DubaiBalayage #AbuDhabiBalayage"
+    },
+    "linkedin": {
+     "title": "",
+     "hook": "",
+     "body": "",
+     "cta": "",
+     "hashtags": ""
+    },
+    "tiktok": {
+     "title": "",
+     "hook": "balayage in Dubai and Abu Dhabi, this is why it grows out so soft",
+     "body": "it's a hand painted colour technique, not foils.\nour colourists at Tara Rose Salon paint it on section by section, following your hair's natural fall.\nthat's why there's no sharp regrowth line to chase.",
+     "cta": "save this for your next colour conversation. ask our colourists at Tara Rose Salon, across our Dubai and Abu Dhabi salons, about balayage placement for your hair plan.",
+     "hashtags": "#tararosesalon #balayage #dubaihairsalon #abudhabihairsalon #handpaintedhair"
+    },
+    "youtube": {
+     "title": "",
+     "hook": "",
+     "body": "",
+     "cta": "",
+     "hashtags": ""
+    }
+   },
+   "done": {}
+  }
+ ],
+ "campaigns": [
+  {
+   "id": "sample",
+   "name": "Sample: October 2026",
+   "year": 2026,
+   "items": [
+    {
+     "id": "r1",
+     "date": "2026-10-01",
+     "day": "Thu",
+     "format": "Carousel",
+     "title": "What a hair plan actually is",
+     "pillar": "Educational",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "LinkedIn",
+      "TikTok",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "Posted"
+      },
+      {
+       "name": "Copy status",
+       "value": "Posted"
+      }
+     ],
+     "state": "done",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W1: Oct 1-4",
+     "extra": {}
+    },
+    {
+     "id": "r2",
+     "date": "2026-10-03",
+     "day": "Sat",
+     "format": "Static",
+     "title": "Stylist work highlight",
+     "pillar": "Work highlight",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "Posted"
+      },
+      {
+       "name": "Copy status",
+       "value": "Posted"
+      }
+     ],
+     "state": "done",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "Confirm the stylist handle before crediting",
+     "week": "W1: Oct 1-4",
+     "extra": {}
+    },
+    {
+     "id": "r4",
+     "date": "2026-10-05",
+     "day": "Mon",
+     "format": "Reel",
+     "title": "How many sessions to go blonde from dark?",
+     "pillar": "Educational",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "TikTok",
+      "YouTube Shorts",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "Ready"
+      },
+      {
+       "name": "Copy status",
+       "value": "Written"
+      }
+     ],
+     "state": "ready",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "Answer in the first line: 2 to 3 sessions",
+     "week": "W2: Oct 5-11",
+     "extra": {}
+    },
+    {
+     "id": "r5",
+     "date": "2026-10-06",
+     "day": "Tue",
+     "format": "Story",
+     "title": "Hair plan FAQ: how often should I book?",
+     "pillar": "FAQ",
+     "platforms": [
+      "IG Story",
+      "FB Story"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "Ready"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W2: Oct 5-11",
+     "extra": {}
+    },
+    {
+     "id": "r6",
+     "date": "2026-10-08",
+     "day": "Thu",
+     "format": "Carousel",
+     "title": "Brassy or flat? It is a dimension question",
+     "pillar": "Educational",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "LinkedIn",
+      "TikTok",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W2: Oct 5-11",
+     "extra": {}
+    },
+    {
+     "id": "r7",
+     "date": "2026-10-10",
+     "day": "Sat",
+     "format": "Static",
+     "title": "Client review of the week",
+     "pillar": "Social proof",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "Ready"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "Use a Google review, first name only",
+     "week": "W2: Oct 5-11",
+     "extra": {}
+    },
+    {
+     "id": "r9",
+     "date": "2026-10-12",
+     "day": "Mon",
+     "format": "Reel",
+     "title": "Expensive brunette is not darker, it is richer",
+     "pillar": "Educational",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "TikTok",
+      "YouTube Shorts",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W3: Oct 12-18",
+     "extra": {}
+    },
+    {
+     "id": "r10",
+     "date": "2026-10-13",
+     "day": "Tue",
+     "format": "Story",
+     "title": "Quiz: which gloss does your hair need?",
+     "pillar": "Quiz",
+     "platforms": [
+      "IG Story",
+      "FB Story"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W3: Oct 12-18",
+     "extra": {}
+    },
+    {
+     "id": "r11",
+     "date": "2026-10-14",
+     "day": "Wed",
+     "format": "Carousel",
+     "title": "Gloss, bond or deep conditioning: which one?",
+     "pillar": "Educational",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "LinkedIn",
+      "TikTok",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W3: Oct 12-18",
+     "extra": {}
+    },
+    {
+     "id": "r12",
+     "date": "2026-10-16",
+     "day": "Fri",
+     "format": "Reel",
+     "title": "Transformation edit, stylist TBC",
+     "pillar": "Work highlight",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "TikTok",
+      "YouTube Shorts",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "AWAITING"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "blocked",
+     "blocked": true,
+     "cta": "",
+     "link": "",
+     "notes": "BLOCKER: video file not received",
+     "week": "W3: Oct 12-18",
+     "extra": {}
+    },
+    {
+     "id": "r13",
+     "date": "2026-10-17",
+     "day": "Sat",
+     "format": "Static",
+     "title": "Stylist work highlight",
+     "pillar": "Work highlight",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "Ready"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W3: Oct 12-18",
+     "extra": {}
+    },
+    {
+     "id": "r15",
+     "date": "2026-10-19",
+     "day": "Mon",
+     "format": "Carousel",
+     "title": "Confidence Mapping: your plan before the chair",
+     "pillar": "Consultation",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "LinkedIn",
+      "TikTok",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W4: Oct 19-25",
+     "extra": {}
+    },
+    {
+     "id": "r16",
+     "date": "2026-10-20",
+     "day": "Tue",
+     "format": "Story",
+     "title": "Consultation FAQ: do I need one before colour?",
+     "pillar": "FAQ",
+     "platforms": [
+      "IG Story",
+      "FB Story"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W4: Oct 19-25",
+     "extra": {}
+    },
+    {
+     "id": "r17",
+     "date": "2026-10-21",
+     "day": "Wed",
+     "format": "Reel",
+     "title": "Behind the chair: a consultation in 30 seconds",
+     "pillar": "Brand",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "TikTok",
+      "YouTube Shorts",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "Film at Al Quoz",
+     "week": "W4: Oct 19-25",
+     "extra": {}
+    },
+    {
+     "id": "r18",
+     "date": "2026-10-23",
+     "day": "Fri",
+     "format": "Carousel",
+     "title": "Why we map colour in stages",
+     "pillar": "Educational",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "LinkedIn",
+      "TikTok",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W4: Oct 19-25",
+     "extra": {}
+    },
+    {
+     "id": "r19",
+     "date": "2026-10-24",
+     "day": "Sat",
+     "format": "Static",
+     "title": "Team spotlight",
+     "pillar": "Brand",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "LinkedIn",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "Ask the team member before posting",
+     "week": "W4: Oct 19-25",
+     "extra": {}
+    },
+    {
+     "id": "r21",
+     "date": "2026-10-26",
+     "day": "Mon",
+     "format": "Reel",
+     "title": "Your hair calendar for the next 3 months",
+     "pillar": "Educational",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "TikTok",
+      "YouTube Shorts",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W5: Oct 26-31",
+     "extra": {}
+    },
+    {
+     "id": "r22",
+     "date": "2026-10-27",
+     "day": "Tue",
+     "format": "Story",
+     "title": "Quiz: what is your hair goal this season?",
+     "pillar": "Quiz",
+     "platforms": [
+      "IG Story",
+      "FB Story"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W5: Oct 26-31",
+     "extra": {}
+    },
+    {
+     "id": "r23",
+     "date": "2026-10-29",
+     "day": "Thu",
+     "format": "Carousel",
+     "title": "October recap: before and after",
+     "pillar": "Social proof",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "LinkedIn",
+      "TikTok",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "blocked",
+     "blocked": true,
+     "cta": "",
+     "link": "",
+     "notes": "BLOCKER: client photo consent pending",
+     "week": "W5: Oct 26-31",
+     "extra": {}
+    },
+    {
+     "id": "r24",
+     "date": "2026-10-31",
+     "day": "Sat",
+     "format": "Static",
+     "title": "Book your November hair plan",
+     "pillar": "Booking",
+     "platforms": [
+      "Instagram",
+      "Facebook",
+      "Google Business"
+     ],
+     "statuses": [
+      {
+       "name": "Asset status",
+       "value": "To produce"
+      },
+      {
+       "name": "Copy status",
+       "value": "To write"
+      }
+     ],
+     "state": "todo",
+     "blocked": false,
+     "cta": "",
+     "link": "",
+     "notes": "",
+     "week": "W5: Oct 26-31",
+     "extra": {}
+    }
+   ],
+   "weeks": [
+    {
+     "label": "W1: Oct 1-4",
+     "theme": "SAMPLE MONTH: HAIR PLAN SEASON",
+     "notes": "This is a sample. Replace the rows with your own plan."
+    },
+    {
+     "label": "W2: Oct 5-11",
+     "theme": "BLONDE EDUCATION",
+     "notes": ""
+    },
+    {
+     "label": "W3: Oct 12-18",
+     "theme": "BRUNETTE + GLOSS",
+     "notes": ""
+    },
+    {
+     "label": "W4: Oct 19-25",
+     "theme": "CONFIDENCE MAPPING",
+     "notes": ""
+    },
+    {
+     "label": "W5: Oct 26-31",
+     "theme": "MONTH CLOSE",
+     "notes": ""
+    }
+   ],
+   "importedAt": "2026-10-05T03:00:00Z"
+  }
+ ]
+}

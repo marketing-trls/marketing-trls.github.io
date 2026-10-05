@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tara Rose Content Planner</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,500&family=Figtree:wght@400;500;600;700&family=Jost:wght@300;400&display=swap">
+<style>
+/* Read-only website version of the Tara Rose content planner (data from data/posts.json, exported from the Claude planner).
+   Tara Rose 2026 look: black and charcoal grounds, white type, one mint accent. Deliberately dark-only. */
+:root{
+  --bg:#0e0e0e; --surface:#181818; --raise:#202020; --line:#2e2e2e; --line-strong:#454545;
+  --ink:#f5f4f1; --muted:#a6a5a1; --mint:#c2f0de; --mint-ink:#0d1a15; --mint-dim:rgba(194,240,222,.14);
+  --warn:#f2c088;
+  --serif:"Playfair Display","Didot","Bodoni 72",Georgia,serif;
+  --sans:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mark:"Jost","Futura","Century Gothic",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:calc(28px + env(safe-area-inset-top,0px)) 60px}
+.wrap{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.brandrow{flex:1 1 100%;display:flex;justify-content:center;padding-bottom:8px}
+.lockup{display:inline-flex;flex-direction:column;align-items:center;font-family:var(--mark);font-weight:300;text-transform:uppercase;line-height:1}
+.lockup .rule{width:34%;height:2px;background:var(--mint);margin-bottom:9px}
+.lockup .name{font-size:22px;letter-spacing:.32em;padding-left:.32em}
+.lockup .salon{font-size:9.5px;letter-spacing:.42em;padding-left:.42em;margin-top:7px;color:var(--muted)}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.9rem,4vw,2.6rem);line-height:1.08;margin:0;text-wrap:balance}
+h1 em{font-style:italic;color:var(--mint)}
+.sub{color:var(--muted);font-size:14px;margin:0}
+button,.btn{font:inherit;font-weight:600;font-size:14.5px;min-height:44px;cursor:pointer;border-radius:999px;padding:9px 16px;border:1px solid transparent;background:var(--mint);color:var(--mint-ink);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button.ghost,.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+button.ghost:hover,.btn.ghost:hover{border-color:var(--mint);color:var(--mint)}
+button:focus-visible,.btn:focus-visible,select:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.notice{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 15px;font-size:14px;color:var(--muted)}
+.pipeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+@media (max-width:620px){.pipeline{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pstep{flex-direction:column;align-items:flex-start;gap:0;border-radius:12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);padding:10px 14px;min-height:62px}
+.pstep .pl{font-weight:600;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.pstep .pn{font-family:var(--serif);font-size:1.5rem;line-height:1.1}
+.pstep[aria-pressed="true"]{border-color:var(--mint);background:var(--mint-dim)}
+.pstep[aria-pressed="true"] .pl{color:var(--mint)}
+.viewsw{display:inline-flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;width:fit-content}
+.viewsw button{background:transparent;color:var(--muted);border:0;padding:8px 16px}
+.viewsw button[aria-pressed="true"]{background:var(--mint);color:var(--mint-ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.tab{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab .n{font-family:var(--mark);font-weight:400;font-size:11px;opacity:.75;margin-left:2px}
+.profile{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--mark);font-size:10px;letter-spacing:.18em;padding-left:.18em;flex:none}
+.handle{font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;max-width:520px}
+.tile{position:relative;aspect-ratio:var(--ratio,3/4);max-width:100%;border:0;padding:0;border-radius:0;overflow:hidden;background:var(--raise);color:#fff;display:block;width:100%;min-height:0}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.tile .st{position:absolute;left:6px;top:6px;font-family:var(--mark);font-size:10px;letter-spacing:.14em;text-transform:uppercase;background:rgba(10,10,10,.72);color:#fff;padding:3px 7px;border-radius:999px}
+.tile .st.scheduled,.tile .st.posted{background:var(--mint);color:var(--mint-ink)}
+.tile .when{position:absolute;left:0;right:0;bottom:0;padding:22px 7px 6px;font-size:11px;font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.72));text-align:left;font-variant-numeric:tabular-nums}
+.tile .kind{position:absolute;right:6px;bottom:28px;font-size:10px;font-family:var(--mark);letter-spacing:.12em;background:rgba(10,10,10,.72);padding:2px 6px;border-radius:999px}
+.tile .ph{position:absolute;inset:0;display:grid;place-items:center;padding:10px;text-align:center;font-size:11.5px;color:var(--muted);background:repeating-linear-gradient(135deg,var(--raise) 0 10px,var(--surface) 10px 20px)}
+.empty{padding:36px 20px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line-strong);border-radius:14px;grid-column:1/-1}
+.empty .big{font-family:var(--serif);font-size:1.35rem;color:var(--ink);margin-bottom:6px}
+.empty .big em{color:var(--mint)}
+label{display:block;font-family:var(--mark);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.18em;margin-bottom:7px}
+select{font:inherit;font-size:15.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:240px;max-width:100%}
+.packbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between}
+.pack-head{display:flex;flex-direction:column;gap:6px;padding:22px 0 6px}
+.eyebrow{font-family:var(--mark);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--mint)}
+.pack-head h2{font-family:var(--serif);font-size:clamp(1.6rem,3.4vw,2.2rem);margin:0;font-weight:500}
+.packlist{display:flex;flex-direction:column;gap:18px}
+.creative{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:18px;min-width:0;scroll-margin-top:16px}
+.creative.flash{border-color:var(--mint)}
+.cr-top{display:grid;grid-template-columns:150px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:640px){.cr-top{grid-template-columns:96px minmax(0,1fr)}.creative{padding:16px}}
+.cr-top img,.cr-top .noimg{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;background:var(--raise)}
+.cr-title{font-family:var(--serif);font-size:1.45rem;line-height:1.2;margin:4px 0 8px;word-break:break-word}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-block;font-family:var(--mark);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--muted)}
+.pill.approved{color:var(--warn);border-color:var(--warn)}
+.pill.scheduled,.pill.posted{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
+.strategy{font-size:14px;color:var(--muted);border-left:2px solid var(--mint);padding-left:10px;margin:10px 0 0}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:14px;margin:12px 0 0}
+.kv dt{font-family:var(--mark);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+.kv dd{margin:0;min-width:0;word-break:break-word}
+.meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden;flex:1;max-width:220px}
+.meter>div{height:100%;background:var(--mint)}
+.cr-prog{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--muted)}
+.plat{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px}
+.plat.isdone .copybox,.plat.isdone .gbp-grid{opacity:.55}
+.plat-h{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.plat-h h3{margin:0;font-family:var(--mark);font-weight:400;font-size:12px;letter-spacing:.22em;text-transform:uppercase}
+.copybox{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.65;margin:0}
+.copybox .seg{display:block;font-family:var(--mark);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin:0 0 2px}
+.copybox .tags{color:var(--muted)}
+.gbp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.gbp-grid{grid-template-columns:minmax(0,1fr)}}
+.gbp-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.gbp-card .bt{font-family:var(--mark);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint)}
+.gbp-card .tt{font-weight:700}
+.gbp-card .bd{white-space:pre-wrap;word-break:break-word;font-size:14.5px}
+.count{font-size:12px;color:var(--muted)}
+.footer-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+.footer-card h4{margin:0 0 6px;font-family:var(--mark);font-weight:400;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint)}
+.footer-card p{margin:0;font-size:14px;color:var(--muted)}
+[hidden]{display:none!important}
+/* campaign calendar */
+.camp-head{display:flex;flex-direction:column;gap:8px;padding:18px 0 4px}
+.camp-month{display:flex;align-items:center;gap:12px}
+.camp-month h2{font-family:var(--serif);font-weight:500;font-size:clamp(1.6rem,3.6vw,2.3rem);margin:0;text-transform:none;letter-spacing:0;color:var(--ink);min-width:0}
+.camp-month button{padding:6px 14px}
+.camp-themes{display:flex;flex-wrap:wrap;gap:6px}
+.theme{font-size:12.5px;border:1px solid var(--line-strong);border-radius:999px;padding:4px 12px;color:var(--muted)}
+.theme b{color:var(--mint);font-weight:600;margin-right:4px}
+.camp-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:10px}
+@media (max-width:620px){.camp-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.cstat{flex-direction:column;align-items:flex-start;gap:0;border-radius:12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);padding:10px 14px;min-height:62px}
+.cstat .pl{font-weight:600;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.cstat .pn{font-family:var(--serif);font-size:1.5rem;line-height:1.1}
+.cstat.on{border-color:var(--mint);background:var(--mint-dim)}
+.cstat.s-blocked .pl{color:var(--warn)}
+.camp-next{margin-top:12px;background:var(--raise);border-left:4px solid var(--mint);border-radius:10px;padding:10px 14px;font-size:15px}
+.camp-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
+.camp-bar select{width:auto;min-width:160px;padding:9px 12px;font-size:14.5px}
+.viewsw.sm button{padding:6px 14px;min-height:38px}
+.cal-wrap{overflow-x:auto}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(118px,1fr));gap:4px;min-width:840px}
+.cdow{font-family:var(--mark);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:4px 6px}
+.cday{background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:110px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.cday.off{background:transparent;border-color:transparent}
+.cday.today{border-color:var(--mint)}
+.cday.empty-day{opacity:.55}
+.cd-n{font-weight:700;font-size:13px;color:var(--muted)}
+.cday.today .cd-n{color:var(--mint)}
+.citem{display:flex;flex-wrap:wrap;align-items:flex-start;gap:3px 5px;width:100%;min-height:0;padding:5px 7px;border-radius:7px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-left:3px solid var(--line-strong);font-size:12px;font-weight:600;text-align:left;line-height:1.3}
+.citem .ci-t{flex:1 1 calc(100% - 22px);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-width:0}
+.citem .ci-f{color:var(--muted);flex:none}
+.citem .ci-b{flex:none;font-size:10px;background:var(--warn);color:#2a1a05;border-radius:99px;padding:0 6px;margin-left:17px}
+.citem.s-done{border-left-color:var(--mint);opacity:.6}
+.citem.s-ready{border-left-color:var(--mint)}
+.citem.s-blocked{border-left-color:var(--warn)}
+.agenda{display:flex;flex-direction:column;gap:10px}
+.aweek{margin-top:10px;padding:10px 14px;border-radius:10px;background:var(--mint-dim);font-size:14px}
+.aweek b{color:var(--mint);margin-right:6px}
+.aday{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:620px){.aday{grid-template-columns:minmax(0,1fr)}}
+.ad-d{font-weight:700;font-size:14px;padding-top:12px}
+.aday.today .ad-d{color:var(--mint)}
+.ad-items{display:flex;flex-direction:column;gap:6px;min-width:0}
+.arow{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:start;width:100%;text-align:left;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:400}
+.arow:hover{border-color:var(--line-strong)}
+.ar-s{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;border:1px solid var(--line-strong);color:var(--muted)}
+.arow.s-done .ar-s{background:var(--mint);color:var(--mint-ink);border-color:var(--mint)}
+.arow.s-ready .ar-s{color:var(--mint);border-color:var(--mint)}
+.arow.s-blocked{border-color:rgba(242,192,136,.6)}
+.arow.s-blocked .ar-s{background:var(--warn);color:#2a1a05;border-color:var(--warn)}
+.arow.s-done .ar-t{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
+.ar-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ar-t{font-weight:700;font-size:15px}
+.ar-m{font-size:13px;color:var(--muted)}
+.ar-b{font-size:13px;color:var(--warn);font-weight:600}
+.ar-st{font-size:12px;color:var(--muted);text-align:right;max-width:160px}
+@media (max-width:620px){.arow{grid-template-columns:26px minmax(0,1fr)}.ar-st{grid-column:2;text-align:left;max-width:none}}
+.camp-detail{margin-top:14px}
+.cdet{background:var(--surface);border:1px solid var(--mint);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.cdet.s-blocked{border-color:var(--warn)}
+.cdet-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cdet-x{padding:4px 12px;min-height:36px}
+.kv dd.blk{color:var(--warn);font-weight:600}
+.pill.st-blocked{color:var(--warn);border-color:var(--warn)}
+.pill.st-done,.pill.st-ready{color:var(--mint);border-color:var(--mint)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+.ctable{width:100%;border-collapse:collapse;font-size:14px;min-width:860px}
+.ctable th{text-align:left;font-family:var(--mark);font-weight:400;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:12px 12px;background:var(--surface);border-bottom:1px solid var(--line);white-space:nowrap}
+.ctable td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.ctable tr.tr{cursor:pointer}
+.ctable tr.tr:hover td,.ctable tr.tr:focus td{background:var(--raise)}
+.ctable tr.tr:focus{outline:2px solid var(--mint);outline-offset:-2px}
+.ctable tr.tr.today td:first-child{box-shadow:inset 3px 0 0 var(--mint)}
+.ctable tr.tw td{background:var(--mint-dim);font-size:13px;padding:8px 12px}
+.ctable tr.tw b{color:var(--mint);margin-right:6px}
+.ctable tr.tn td{padding-top:0;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.ctable tr.tr:has(+ tr.tn) td{border-bottom:0}
+.ctable tr.tn.blk td{color:var(--warn);font-weight:600}
+.ctable tr.s-done .td-t{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
+.td-d{white-space:nowrap;font-weight:600}
+.td-f{white-space:nowrap}
+.td-t{font-weight:700;min-width:220px}
+.td-s{white-space:nowrap;color:var(--muted)}
+.pchip{display:inline-block;font-size:11px;font-weight:700;border:1px solid var(--line-strong);border-radius:6px;padding:1px 6px;margin:0 3px 3px 0;white-space:nowrap}
+.tpill{display:inline-block;white-space:nowrap;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;border:1px solid var(--line-strong);color:var(--muted)}
+.tpill.st-done{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
+.tpill.st-ready{color:var(--mint);border-color:var(--mint)}
+.tpill.st-blocked{background:var(--warn);border-color:var(--warn);color:#2a1a05}
+.mapping{display:flex;flex-wrap:wrap;gap:6px}
+.mapping span{font-size:12.5px;border:1px solid var(--line-strong);border-radius:999px;padding:3px 10px}
+.mapping b{color:var(--mint);font-weight:600}
+.camp-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.camp-tools select{min-width:240px}
+.viewsw button{white-space:nowrap}
+@media (max-width:420px){.viewsw button{padding:8px 11px;font-size:13.5px}}
+
+.pi{display:inline-flex;width:20px;height:20px;flex:none}
+.pi svg{width:100%;height:100%;display:block}
+.tab{display:inline-flex;align-items:center;gap:8px}
+.chip .pi,.subtab .pi{width:16px;height:16px}
+.plat-h h3{display:inline-flex;align-items:center;gap:8px}
+.prow .pn{display:inline-flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brandrow"><div class="lockup" aria-label="Tara Rose Salon"><span class="rule"></span><span class="name">Tara Rose</span><span class="salon">Salon</span></div></div>
+    <div>
+      <h1>Content <em>planner</em></h1>
+      <p class="sub" id="updated">Loading the latest plan…</p>
+    </div>
+  </header>
+
+  <div class="notice">Read-only view. To change captions, sync Drive or approve posts, use the Content planner in Claude.</div>
+  <div class="pipeline" id="pipeline" role="group" aria-label="Filter by status"></div>
+  <div class="viewsw" role="group" aria-label="View"><button id="vGrid" aria-pressed="true">Grids</button><button id="vPack" aria-pressed="false">Caption pack</button><button id="vCamp" aria-pressed="false">Campaign</button></div>
+
+  <section id="gridView">
+    <div class="tabs" role="tablist" aria-label="Platform" id="tabs"></div>
+    <div class="profile" style="margin-top:16px"><div class="avatar" aria-hidden="true">TRS</div><div><div class="handle" id="handle"></div><div class="sub" id="gridSub"></div></div></div>
+    <div class="grid" id="grid"></div>
+    <p class="sub" style="margin-top:10px">Tap a post to see its complete captions.</p>
+  </section>
+
+  <section id="campView" hidden>
+    <div class="camp-tools"><div><label for="campSel">Campaign</label><select id="campSel"></select></div><a class="btn ghost" href="data/campaign-sample.csv" download="tara-rose-campaign-sample.csv">Download sample CSV</a></div>
+    <div id="camp"></div>
+  </section>
+
+  <section id="packView" hidden>
+    <div class="packbar">
+      <div><label for="weekSel">Week</label><select id="weekSel"></select></div>
+      <button class="ghost" id="packCopy">Copy whole pack</button>
+    </div>
+    <div id="pack"></div>
+  </section>
+</div>
+
+<script id="planData" type="application/json">{"exportedAt": "2026-10-04T20:20:00Z", "hours": "Open daily 9am to 8pm", "branches": "Mamsha Al Saadiyat | Abu Dhabi\nKhalifa City A | Abu Dhabi\nAl Quoz | Dubai\nMotor City | Dubai", "posts": [{"kind": "image", "thumb": "data:image/jpeg;base64,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", "scheduledAt": "2026-10-06T11:00", "status": "approved", "strategy": "Educational authority builder. Direct answer to a common search question, staged method as expertise signal, soft consultation CTA with no price or promise.", "keyword": "balayage", "specialist": "", "handle": "", "branch": "", "onScreen": "Balayage, done gently.", "altText": "Hand painted balayage colour technique shown at Tara Rose Salon, across its Dubai and Abu Dhabi branches.", "filename": "7d4b58e2-3e96-462c-a48c-ea3f1b10631e.jpeg", "id": "1yWVwWFDc8pwR4d3NA5qUv1zTPc-QmXsU", "platforms": {"facebook": false, "instagram": true, "tiktok": false, "youtube": false}, "captions": {"facebook": {"title": "", "hook": "Thinking about balayage in Dubai or Abu Dhabi? Here is how it works.", "body": "Balayage is a hand painted colour technique that builds soft, natural dimension instead of hard lines. At Tara Rose Salon our colourists paint the colour on by hand, section by section, working with the way your hair naturally falls. That is why the result tends to grow out so softly, with no harsh line to chase as the weeks go on. If you are curious whether balayage suits your hair, it is worth starting with a proper consultation rather than guessing from a photo.", "cta": "Our colourists at Tara Rose Salon, across our Dubai and Abu Dhabi salons, are happy to talk you through placement before you commit to anything. Book through the link below to start your hair plan.", "hashtags": "#TaraRoseSalon #Balayage #DubaiHairSalon #AbuDhabiHairSalon"}, "gbp": {"posts": []}, "instagram": {"title": "", "hook": "Balayage in Dubai and Abu Dhabi, what makes it last so well?", "body": "Balayage is a hand painted colour technique that builds soft, natural dimension rather than hard lines. At Tara Rose Salon our colourists paint colour by hand, section by section, following your hair's natural fall. This is why the result grows out gently, with no sharp regrowth line to chase.", "cta": "Ask our colourists at Tara Rose Salon, across our Dubai and Abu Dhabi salons, which placement suits your hair plan. Tap link in bio → tararosesalon.com to book. Save this for your next colour conversation. 💛", "hashtags": "#TaraRoseSalon #Balayage #DubaiHairSalon #AbuDhabiHairSalon #HairColourist #HandPaintedHair #DubaiBalayage #AbuDhabiBalayage"}, "linkedin": {"title": "", "hook": "", "body": "", "cta": "", "hashtags": ""}, "tiktok": {"title": "", "hook": "balayage in Dubai and Abu Dhabi, this is why it grows out so soft", "body": "it's a hand painted colour technique, not foils.\nour colourists at Tara Rose Salon paint it on section by section, following your hair's natural fall.\nthat's why there's no sharp regrowth line to chase.", "cta": "save this for your next colour conversation. ask our colourists at Tara Rose Salon, across our Dubai and Abu Dhabi salons, about balayage placement for your hair plan.", "hashtags": "#tararosesalon #balayage #dubaihairsalon #abudhabihairsalon #handpaintedhair"}, "youtube": {"title": "", "hook": "", "body": "", "cta": "", "hashtags": ""}}, "done": {}}], "campaigns": [{"id": "sample", "name": "Sample: October 2026", "year": 2026, "items": [{"id": "r1", "date": "2026-10-01", "day": "Thu", "format": "Carousel", "title": "What a hair plan actually is", "pillar": "Educational", "platforms": ["Instagram", "Facebook", "LinkedIn", "TikTok", "Google Business"], "statuses": [{"name": "Asset status", "value": "Posted"}, {"name": "Copy status", "value": "Posted"}], "state": "done", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W1: Oct 1-4", "extra": {}}, {"id": "r2", "date": "2026-10-03", "day": "Sat", "format": "Static", "title": "Stylist work highlight", "pillar": "Work highlight", "platforms": ["Instagram", "Facebook", "Google Business"], "statuses": [{"name": "Asset status", "value": "Posted"}, {"name": "Copy status", "value": "Posted"}], "state": "done", "blocked": false, "cta": "", "link": "", "notes": "Confirm the stylist handle before crediting", "week": "W1: Oct 1-4", "extra": {}}, {"id": "r4", "date": "2026-10-05", "day": "Mon", "format": "Reel", "title": "How many sessions to go blonde from dark?", "pillar": "Educational", "platforms": ["Instagram", "Facebook", "TikTok", "YouTube Shorts", "Google Business"], "statuses": [{"name": "Asset status", "value": "Ready"}, {"name": "Copy status", "value": "Written"}], "state": "ready", "blocked": false, "cta": "", "link": "", "notes": "Answer in the first line: 2 to 3 sessions", "week": "W2: Oct 5-11", "extra": {}}, {"id": "r5", "date": "2026-10-06", "day": "Tue", "format": "Story", "title": "Hair plan FAQ: how often should I book?", "pillar": "FAQ", "platforms": ["IG Story", "FB Story"], "statuses": [{"name": "Asset status", "value": "Ready"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W2: Oct 5-11", "extra": {}}, {"id": "r6", "date": "2026-10-08", "day": "Thu", "format": "Carousel", "title": "Brassy or flat? It is a dimension question", "pillar": "Educational", "platforms": ["Instagram", "Facebook", "LinkedIn", "TikTok", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W2: Oct 5-11", "extra": {}}, {"id": "r7", "date": "2026-10-10", "day": "Sat", "format": "Static", "title": "Client review of the week", "pillar": "Social proof", "platforms": ["Instagram", "Facebook", "Google Business"], "statuses": [{"name": "Asset status", "value": "Ready"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "Use a Google review, first name only", "week": "W2: Oct 5-11", "extra": {}}, {"id": "r9", "date": "2026-10-12", "day": "Mon", "format": "Reel", "title": "Expensive brunette is not darker, it is richer", "pillar": "Educational", "platforms": ["Instagram", "Facebook", "TikTok", "YouTube Shorts", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W3: Oct 12-18", "extra": {}}, {"id": "r10", "date": "2026-10-13", "day": "Tue", "format": "Story", "title": "Quiz: which gloss does your hair need?", "pillar": "Quiz", "platforms": ["IG Story", "FB Story"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W3: Oct 12-18", "extra": {}}, {"id": "r11", "date": "2026-10-14", "day": "Wed", "format": "Carousel", "title": "Gloss, bond or deep conditioning: which one?", "pillar": "Educational", "platforms": ["Instagram", "Facebook", "LinkedIn", "TikTok", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W3: Oct 12-18", "extra": {}}, {"id": "r12", "date": "2026-10-16", "day": "Fri", "format": "Reel", "title": "Transformation edit, stylist TBC", "pillar": "Work highlight", "platforms": ["Instagram", "Facebook", "TikTok", "YouTube Shorts", "Google Business"], "statuses": [{"name": "Asset status", "value": "AWAITING"}, {"name": "Copy status", "value": "To write"}], "state": "blocked", "blocked": true, "cta": "", "link": "", "notes": "BLOCKER: video file not received", "week": "W3: Oct 12-18", "extra": {}}, {"id": "r13", "date": "2026-10-17", "day": "Sat", "format": "Static", "title": "Stylist work highlight", "pillar": "Work highlight", "platforms": ["Instagram", "Facebook", "Google Business"], "statuses": [{"name": "Asset status", "value": "Ready"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W3: Oct 12-18", "extra": {}}, {"id": "r15", "date": "2026-10-19", "day": "Mon", "format": "Carousel", "title": "Confidence Mapping: your plan before the chair", "pillar": "Consultation", "platforms": ["Instagram", "Facebook", "LinkedIn", "TikTok", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W4: Oct 19-25", "extra": {}}, {"id": "r16", "date": "2026-10-20", "day": "Tue", "format": "Story", "title": "Consultation FAQ: do I need one before colour?", "pillar": "FAQ", "platforms": ["IG Story", "FB Story"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W4: Oct 19-25", "extra": {}}, {"id": "r17", "date": "2026-10-21", "day": "Wed", "format": "Reel", "title": "Behind the chair: a consultation in 30 seconds", "pillar": "Brand", "platforms": ["Instagram", "Facebook", "TikTok", "YouTube Shorts", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "Film at Al Quoz", "week": "W4: Oct 19-25", "extra": {}}, {"id": "r18", "date": "2026-10-23", "day": "Fri", "format": "Carousel", "title": "Why we map colour in stages", "pillar": "Educational", "platforms": ["Instagram", "Facebook", "LinkedIn", "TikTok", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W4: Oct 19-25", "extra": {}}, {"id": "r19", "date": "2026-10-24", "day": "Sat", "format": "Static", "title": "Team spotlight", "pillar": "Brand", "platforms": ["Instagram", "Facebook", "LinkedIn", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "Ask the team member before posting", "week": "W4: Oct 19-25", "extra": {}}, {"id": "r21", "date": "2026-10-26", "day": "Mon", "format": "Reel", "title": "Your hair calendar for the next 3 months", "pillar": "Educational", "platforms": ["Instagram", "Facebook", "TikTok", "YouTube Shorts", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W5: Oct 26-31", "extra": {}}, {"id": "r22", "date": "2026-10-27", "day": "Tue", "format": "Story", "title": "Quiz: what is your hair goal this season?", "pillar": "Quiz", "platforms": ["IG Story", "FB Story"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W5: Oct 26-31", "extra": {}}, {"id": "r23", "date": "2026-10-29", "day": "Thu", "format": "Carousel", "title": "October recap: before and after", "pillar": "Social proof", "platforms": ["Instagram", "Facebook", "LinkedIn", "TikTok", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "blocked", "blocked": true, "cta": "", "link": "", "notes": "BLOCKER: client photo consent pending", "week": "W5: Oct 26-31", "extra": {}}, {"id": "r24", "date": "2026-10-31", "day": "Sat", "format": "Static", "title": "Book your November hair plan", "pillar": "Booking", "platforms": ["Instagram", "Facebook", "Google Business"], "statuses": [{"name": "Asset status", "value": "To produce"}, {"name": "Copy status", "value": "To write"}], "state": "todo", "blocked": false, "cta": "", "link": "", "notes": "", "week": "W5: Oct 26-31", "extra": {}}], "weeks": [{"label": "W1: Oct 1-4", "theme": "SAMPLE MONTH: HAIR PLAN SEASON", "notes": "This is a sample. Replace the rows with your own plan."}, {"label": "W2: Oct 5-11", "theme": "BLONDE EDUCATION", "notes": ""}, {"label": "W3: Oct 12-18", "theme": "BRUNETTE + GLOSS", "notes": ""}, {"label": "W4: Oct 19-25", "theme": "CONFIDENCE MAPPING", "notes": ""}, {"label": "W5: Oct 26-31", "theme": "MONTH CLOSE", "notes": ""}], "importedAt": "2026-10-05T03:00:00Z"}]}</script>
+<script>
+/* platform logos (inline so they work offline and inside the artifact frame) */
+const ICONS={
+  instagram:`<svg viewBox="0 0 24 24"><defs><linearGradient id="pi-ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".3" stop-color="#fa7e1e"/><stop offset=".6" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="url(#pi-ig)"/><rect x="6.2" y="6.2" width="11.6" height="11.6" rx="3.6" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="12" cy="12" r="2.9" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="15.6" cy="8.4" r=".95" fill="#fff"/></svg>`,
+  facebook:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="#1877F2"/><path fill="#fff" d="M13.3 22.4v-7.6h2.5l.4-3h-2.9V9.9c0-.85.25-1.45 1.5-1.45h1.5V5.8c-.27-.04-1.17-.12-2.2-.12-2.2 0-3.7 1.34-3.7 3.8v2.3H8v3h2.5v7.6z"/></svg>`,
+  tiktok:`<svg viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="6" fill="#010101"/><g transform="translate(4.4 3.6) scale(.64)"><path fill="#25F4EE" transform="translate(-.9 -.9)" d="M12.5.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/><path fill="#FE2C55" transform="translate(.9 .9)" d="M12.5.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/><path fill="#fff" d="M12.5.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></g></svg>`,
+  youtube:`<svg viewBox="0 0 24 24"><rect x="1" y="4.5" width="22" height="15" rx="4.5" fill="#FF0000"/><path fill="#fff" d="M9.8 8.6v6.8l5.9-3.4z"/></svg>`,
+  linkedin:`<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="3.5" fill="#0A66C2"/><path fill="#fff" d="M6.6 9.6h2.5V17.6H6.6zM7.85 5.6a1.45 1.45 0 1 1 0 2.9 1.45 1.45 0 0 1 0-2.9zM10.6 9.6H13v1.1c.35-.65 1.2-1.3 2.45-1.3 2.6 0 3.05 1.7 3.05 3.9v4.3H16v-3.8c0-.9-.02-2.1-1.28-2.1-1.28 0-1.47 1-1.47 2v3.9H10.6z"/></svg>`,
+  gbp:`<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M4 11h16v8.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5z"/><path fill="#fff" d="M13.2 14h4.3v4.3h-4.3z"/><path fill="#fff" d="M6.5 14h4.6v7H6.5z" opacity=".9"/><path fill="#4285F4" d="M3 4h4.5v5.5a2.25 2.25 0 0 1-4.5 0z"/><path fill="#EA4335" d="M7.5 4H12v5.5a2.25 2.25 0 0 1-4.5 0z"/><path fill="#FBBC05" d="M12 4h4.5v5.5a2.25 2.25 0 0 1-4.5 0z"/><path fill="#34A853" d="M16.5 4H21v5.5a2.25 2.25 0 0 1-4.5 0z"/></svg>`
+};
+const picon=k=>ICONS[k]?`<span class="pi" aria-hidden="true">${ICONS[k]}</span>`:"";
+
+/* ---------- campaign calendar (shared by the Claude planner and the website) ---------- */
+const CAMP=(()=>{
+  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+  function parseCSV(text){
+    const rows=[]; let row=[], cell="", q=false;
+    text=String(text||"").replace(/^﻿/,"");
+    for(let i=0;i<text.length;i++){
+      const c=text[i];
+      if(q){ if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+      else if(c==='"') q=true;
+      else if(c===","){ row.push(cell); cell=""; }
+      else if(c==="\n"||c==="\r"){ if(c==="\r"&&text[i+1]==="\n") i++; row.push(cell); rows.push(row); row=[]; cell=""; }
+      else cell+=c;
+    }
+    if(cell!==""||row.length){ row.push(cell); rows.push(row); }
+    return rows.filter(r=>r.some(x=>String(x).trim()!==""));
+  }
+
+  function parseDate(s,year){
+    s=String(s||"").trim(); if(!s) return "";
+    let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if(m) return iso(+m[1],+m[2],+m[3]);
+    m=s.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?$/); if(m){ let y=m[3]?+m[3]:year; if(y<100) y+=2000; return iso(y,+m[2],+m[1]); }
+    const t=s.toLowerCase().replace(/(\d)(st|nd|rd|th)\b/g,"$1").replace(/[,]/g," ");
+    let d=t.match(/\b(\d{1,2})\s+([a-z]{3,})\b(?:\s+(\d{4}))?/), mon, day, y;
+    if(d&&MONTHS.includes(d[2].slice(0,3))){ day=+d[1]; mon=MONTHS.indexOf(d[2].slice(0,3))+1; y=d[3]?+d[3]:year; }
+    else { d=t.match(/\b([a-z]{3,})\s+(\d{1,2})\b(?:\s+(\d{4}))?/); if(d&&MONTHS.includes(d[1].slice(0,3))){ mon=MONTHS.indexOf(d[1].slice(0,3))+1; day=+d[2]; y=d[3]?+d[3]:year; } }
+    return mon&&day?iso(y,mon,day):"";
+  }
+  const iso=(y,m,d)=>(m<1||m>12||d<1||d>31)?"":`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+  const PLAT=[[/^ig\s*story|instagram\s*story/i,"IG Story"],[/^fb\s*story|facebook\s*story/i,"FB Story"],[/^(ig|insta|instagram)$/i,"Instagram"],[/^(fb|facebook)$/i,"Facebook"],
+    [/^tik\s*tok$/i,"TikTok"],[/^(yt|youtube)(\s*shorts)?$/i,"YouTube Shorts"],[/^(gbp|google( business( profile)?)?|gmb)$/i,"Google Business"],[/^(li|linkedin)$/i,"LinkedIn"],[/^reddit$/i,"Reddit"],[/^(x|twitter)$/i,"X"]];
+  const normPlat=p=>{ p=p.trim(); for(const [re,n] of PLAT) if(re.test(p)) return n; return p; };
+
+  function statusGroup(v){
+    v=String(v||"").toLowerCase();
+    if(!v) return "";
+    if(/posted|published|live|done|complete/.test(v)) return "done";
+    if(/await|block|tbc|on hold|stuck/.test(v)) return "blocked";
+    if(/ready|written|approved|scheduled|final/.test(v)) return "ready";
+    return "todo";
+  }
+  function find(headers,res,skip=[]){ for(const re of res){ const i=headers.findIndex((h,ix)=>re.test(h)&&!skip.includes(ix)); if(i>=0) return i; } return -1; }
+
+  function fromCSV(text,{name="",year=new Date().getFullYear()}={}){
+    const rows=parseCSV(text); if(rows.length<2) throw new Error("The file has no rows under the header.");
+    let hi=rows.findIndex(r=>r.some(c=>/date/i.test(c))); if(hi<0) hi=0;
+    const H=rows[hi].map(h=>String(h).trim()), L=H.map(h=>h.toLowerCase());
+    const col={date:find(L,[/^date$/,/date/]),day:find(L,[/^day$/]),week:find(L,[/^week/]),format:find(L,[/^format/,/format|type/]),
+      platforms:find(L,[/platform|channel|network/]),cta:find(L,[/cta|call to action/]),link:find(L,[/link|url|reference/]),notes:find(L,[/^notes?$/,/note|comment/])};
+    col.title=find(L,[/title|asset|post|topic|creative|content|caption/],[col.date,col.platforms,col.link,col.notes].concat(L.map((h,i)=>/status/.test(h)?i:-1)));
+    col.pillar=find(L,[/pillar/,/phase|theme|campaign|category/],[col.title]);
+    if(col.date<0) throw new Error("No Date column found. Add a column called Date.");
+    const statusCols=L.map((h,i)=>/status/.test(h)?i:-1).filter(i=>i>=0);
+    const used=new Set([...Object.values(col),...statusCols].filter(i=>i>=0));
+    const get=(r,i)=>i>=0?String(r[i]??"").trim():"";
+    const items=[], weeks=[]; let wk=null;
+    rows.slice(hi+1).forEach((r,n)=>{
+      const date=parseDate(get(r,col.date),year);
+      if(!date){
+        const cells=r.map(x=>String(x).trim()).filter(Boolean); if(!cells.length) return;
+        wk={label:get(r,col.week)||cells[0],theme:get(r,col.title)||(cells[1]||""),notes:get(r,col.notes)};
+        if(wk.theme===wk.label) wk.theme=cells[1]||""; weeks.push(wk); return;
+      }
+      const statuses=statusCols.map(i=>({name:H[i],value:get(r,i)})).filter(s=>s.value);
+      const notes=get(r,col.notes);
+      const blocked=/\bblocker\b/i.test(notes)&&!/\bunblocked\b/i.test(notes);
+      const groups=statuses.map(s=>statusGroup(s.value));
+      const state=blocked||groups.includes("blocked")?"blocked":groups.length&&groups.every(g=>g==="done")?"done":groups.length&&groups.every(g=>g==="done"||g==="ready")?"ready":groups.length?"todo":"";
+      const extra={}; H.forEach((h,i)=>{ if(!used.has(i)&&get(r,i)) extra[h||`Column ${i+1}`]=get(r,i); });
+      items.push({id:`r${n}`,date,day:get(r,col.day),format:get(r,col.format),title:get(r,col.title)||"(untitled)",pillar:get(r,col.pillar),
+        platforms:get(r,col.platforms).split(/[,;\/|]+/).map(normPlat).filter(Boolean),statuses,state,blocked,cta:get(r,col.cta),link:get(r,col.link),notes,week:wk?wk.label:"",extra});
+    });
+    if(!items.length) throw new Error("No dated rows found. Check the Date column uses dates like 17 Aug or 2026-08-17.");
+    const mapping={}; [["Date","date"],["Day","day"],["Week","week"],["Format","format"],["Title","title"],["Pillar","pillar"],["Platforms","platforms"],["CTA","cta"],["Reference link","link"],["Notes","notes"]]
+      .forEach(([label,k])=>{ if(col[k]>=0) mapping[label]=H[col[k]]; });
+    statusCols.forEach(i=>mapping[H[i]]=H[i]);
+    return {name:name||"Campaign",year,columns:H,mapping,unused:H.filter((h,i)=>h&&!used.has(i)),items,weeks};
+  }
+
+  const monthKey=d=>d.slice(0,7);
+  const monthLabel=k=>{ const [y,m]=k.split("-"); return new Date(Date.UTC(+y,+m-1,1)).toLocaleDateString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}); };
+  const dayLabel=d=>new Date(d+"T00:00:00Z").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"});
+  const FORMAT_ICON=f=>/reel|video|short/i.test(f)?"▶":/carousel/i.test(f)?"▦":/story/i.test(f)?"◔":/static|photo|post|image/i.test(f)?"■":"•";
+  const STATE_LABEL={done:"Posted",ready:"Ready",todo:"To do",blocked:"Blocked","":"No status"};
+  const STATE_ICON={done:"●",ready:"✓",todo:"○",blocked:"!","":"·"};
+  const todayIso=()=>new Date(Date.now()+4*3600e3).toISOString().slice(0,10);
+
+  function pickMonth(c,want){
+    const ks=[...new Set(c.items.map(i=>monthKey(i.date)))].sort();
+    if(want&&ks.includes(want)) return {ks,k:want};
+    const t=todayIso().slice(0,7); return {ks,k:ks.includes(t)?t:(ks.find(k=>k>t)||ks[ks.length-1])};
+  }
+  function filtered(c,ui,k){
+    return c.items.filter(i=>monthKey(i.date)===k&&(!ui.fmt||i.format===ui.fmt)&&(!ui.plat||i.platforms.includes(ui.plat))&&(!ui.state||i.state===ui.state));
+  }
+
+  function render(el,c,ui){
+    if(!c){ el.innerHTML=`<div class="empty"><div class="big">No campaign <em>yet</em></div>${ui.canImport?"Click <b>Import campaign</b> to sync a content calendar from Drive or upload a CSV.":"A campaign appears here once one is imported in the Content planner."}</div>`; return; }
+    const {ks,k}=pickMonth(c,ui.month); ui.month=k;
+    const all=c.items.filter(i=>monthKey(i.date)===k), list=filtered(c,ui,k);
+    const count=f=>all.filter(f).length;
+    const formats=[...new Set(c.items.map(i=>i.format).filter(Boolean))].sort();
+    const plats=[...new Set(c.items.flatMap(i=>i.platforms))].sort();
+    const byFormat=formats.map(f=>[f,count(i=>i.format===f)]).filter(([,n])=>n);
+    const states=["done","ready","todo","blocked"].map(s=>[s,count(i=>i.state===s)]);
+    const themes=c.weeks.filter(w=>{ const its=c.items.filter(i=>i.week===w.label); return its.some(i=>monthKey(i.date)===k); });
+    const next=all.filter(i=>i.date>=todayIso()&&i.state!=="done").sort((a,b)=>a.date.localeCompare(b.date))[0];
+    const opt=(v,cur,label)=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(label)}</option>`;
+    el.innerHTML=`
+      <div class="camp-head"><span class="eyebrow">${esc(c.name)}</span>
+        <div class="camp-month"><button class="ghost cm-prev" ${ks.indexOf(k)<=0?"disabled":""} aria-label="Previous month">←</button><h2>${esc(monthLabel(k))}</h2><button class="ghost cm-next" ${ks.indexOf(k)>=ks.length-1?"disabled":""} aria-label="Next month">→</button></div>
+        ${themes.length?`<div class="camp-themes">${themes.map(w=>`<span class="theme"><b>${esc(w.label)}</b> ${esc(w.theme)}</span>`).join("")}</div>`:""}
+      </div>
+      <div class="camp-stats">
+        <button class="cstat ${!ui.state?"on":""}" data-s=""><span class="pl">All posts</span><span class="pn">${all.length}</span></button>
+        ${states.map(([s,n])=>`<button class="cstat s-${s} ${ui.state===s?"on":""}" data-s="${s}"><span class="pl">${STATE_ICON[s]} ${STATE_LABEL[s]}</span><span class="pn">${n}</span></button>`).join("")}
+      </div>
+      ${next?`<div class="camp-next"><span class="eyebrow">Next up</span> <b>${esc(dayLabel(next.date))}</b> · ${esc(next.format)} · ${esc(next.title)} <span class="sub">(${esc(STATE_LABEL[next.state])})</span></div>`:""}
+      <div class="camp-bar">
+        <div class="viewsw sm" role="group" aria-label="Layout">${[["table","Table"],["list","List"],["calendar","Calendar"]].map(([v,l])=>`<button class="cv" data-v="${v}" aria-pressed="${(ui.view||"table")===v}">${l}</button>`).join("")}</div>
+        <select class="cf-fmt" aria-label="Format">${opt("",ui.fmt||"","All formats")}${formats.map(f=>opt(f,ui.fmt,f)).join("")}</select>
+        <select class="cf-plat" aria-label="Platform">${opt("",ui.plat||"","All platforms")}${plats.map(p=>opt(p,ui.plat,p)).join("")}</select>
+        ${byFormat.length?`<span class="sub">${byFormat.map(([f,n])=>`${FORMAT_ICON(f)} ${n} ${esc(f)}`).join(" · ")}</span>`:""}
+      </div>
+      <div class="camp-body">${list.length?(ui.view==="calendar"?calendar(k,list):ui.view==="list"?agenda(list,c):table(list,c)):`<div class="empty"><div class="big">Nothing <em>here</em></div>No posts match these filters this month.</div>`}</div>
+      <div class="camp-detail" id="campDetail" hidden></div>`;
+    const set=(patch)=>{ Object.assign(ui,patch); ui.onChange&&ui.onChange(); };
+    el.querySelector(".cm-prev").onclick=()=>set({month:ks[ks.indexOf(k)-1]});
+    el.querySelector(".cm-next").onclick=()=>set({month:ks[ks.indexOf(k)+1]});
+    el.querySelectorAll(".cstat").forEach(b=>b.onclick=()=>set({state:b.dataset.s}));
+    el.querySelectorAll(".cv").forEach(b=>b.onclick=()=>set({view:b.dataset.v}));
+    el.querySelector(".cf-fmt").onchange=e=>set({fmt:e.target.value});
+    el.querySelector(".cf-plat").onchange=e=>set({plat:e.target.value});
+    el.querySelectorAll("[data-item]").forEach(b=>{ b.onclick=()=>detail(el,c,b.dataset.item); if(b.tagName==="TR") b.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); detail(el,c,b.dataset.item); } }; });
+  }
+  function chip(i){ return `<button class="citem s-${i.state}" data-item="${esc(i.id)}"><span class="ci-f">${FORMAT_ICON(i.format)}</span><span class="ci-t">${esc(i.title)}</span>${i.blocked?'<span class="ci-b">Blocker</span>':""}</button>`; }
+  function calendar(k,list){
+    const [y,m]=k.split("-").map(Number), first=new Date(Date.UTC(y,m-1,1)), days=new Date(Date.UTC(y,m,0)).getUTCDate(), lead=(first.getUTCDay()+6)%7, t=todayIso();
+    let cells=Array.from({length:lead},()=>`<div class="cday off"></div>`);
+    for(let d=1;d<=days;d++){ const ds=iso(y,m,d), its=list.filter(i=>i.date===ds);
+      cells.push(`<div class="cday ${ds===t?"today":""} ${its.length?"":"empty-day"}"><span class="cd-n">${d}</span>${its.map(chip).join("")}</div>`); }
+    while(cells.length%7) cells.push(`<div class="cday off"></div>`);
+    return `<div class="cal-wrap"><div class="cal">${DOW.map(d=>`<div class="cdow">${d}</div>`).join("")}${cells.join("")}</div></div>`;
+  }
+  const PLAT_SHORT={"Instagram":"IG","Facebook":"FB","TikTok":"TT","YouTube Shorts":"YT","Google Business":"GBP","LinkedIn":"LI","IG Story":"IG Story","FB Story":"FB Story"};
+  function table(list,c,{limit=0,clickable=true}={}){
+    const rows=list.slice().sort((a,b)=>a.date.localeCompare(b.date)), shown=limit?rows.slice(0,limit):rows;
+    const statusNames=[...new Set(rows.flatMap(i=>i.statuses.map(s=>s.name)))];
+    let lastWeek=null, body="";
+    shown.forEach(i=>{
+      if(i.week&&i.week!==lastWeek){ const wk=(c.weeks||[]).find(x=>x.label===i.week); body+=`<tr class="tw"><td colspan="${6+statusNames.length}"><b>${esc(i.week)}</b> ${esc(wk?.theme||"")}</td></tr>`; lastWeek=i.week; }
+      body+=`<tr class="tr s-${i.state} ${i.date===todayIso()?"today":""}" ${clickable?`data-item="${esc(i.id)}" tabindex="0"`:""}>
+        <td class="td-d">${esc(dayLabel(i.date))}</td>
+        <td><span class="tpill st-${i.state}">${STATE_ICON[i.state]} ${esc(STATE_LABEL[i.state])}</span></td>
+        <td class="td-f">${FORMAT_ICON(i.format)} ${esc(i.format)}</td>
+        <td class="td-t">${esc(i.title)}</td>
+        <td>${esc(i.pillar)}</td>
+        <td class="td-p">${i.platforms.map(p=>`<span class="pchip" title="${esc(p)}">${esc(PLAT_SHORT[p]||p)}</span>`).join("")}</td>
+        ${statusNames.map(n=>`<td class="td-s">${esc((i.statuses.find(s=>s.name===n)||{}).value||"")}</td>`).join("")}
+      </tr>${i.notes?`<tr class="tn ${i.blocked?"blk":""}"><td></td><td colspan="${5+statusNames.length}">${esc(i.notes)}</td></tr>`:""}`;
+    });
+    return `<div class="tbl-wrap"><table class="ctable"><thead><tr><th>Date</th><th>State</th><th>Format</th><th>Title</th><th>Pillar</th><th>Platforms</th>${statusNames.map(n=>`<th>${esc(n)}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>${limit&&rows.length>limit?`<p class="sub">Showing the first ${limit} of ${rows.length} posts.</p>`:""}`;
+  }
+  function agenda(list,c){
+    const byDate={}; list.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(i=>(byDate[i.date]=byDate[i.date]||[]).push(i));
+    let lastWeek=null, out="";
+    Object.entries(byDate).forEach(([d,its])=>{
+      const w=its[0].week; if(w&&w!==lastWeek){ const wk=c.weeks.find(x=>x.label===w); out+=`<div class="aweek"><b>${esc(w)}</b> ${esc(wk?.theme||"")}${wk?.notes?`<span class="sub"> · ${esc(wk.notes)}</span>`:""}</div>`; lastWeek=w; }
+      out+=`<div class="aday ${d===todayIso()?"today":""}"><div class="ad-d">${esc(dayLabel(d))}</div><div class="ad-items">${its.map(i=>`<button class="arow s-${i.state}" data-item="${esc(i.id)}">
+        <span class="ar-s" title="${esc(STATE_LABEL[i.state])}">${STATE_ICON[i.state]}</span>
+        <span class="ar-main"><span class="ar-t">${esc(i.title)}</span><span class="ar-m">${esc([i.format,i.pillar].filter(Boolean).join(" · "))}${i.platforms.length?` · ${esc(i.platforms.join(", "))}`:""}</span>
+        ${i.blocked?`<span class="ar-b">${esc(i.notes)}</span>`:""}</span>
+        <span class="ar-st">${i.statuses.map(s=>esc(s.value)).join(" · ")}</span></button>`).join("")}</div></div>`;
+    });
+    return `<div class="agenda">${out}</div>`;
+  }
+  function detail(el,c,id){
+    const i=c.items.find(x=>x.id===id), box=el.querySelector("#campDetail"); if(!i) return;
+    const link=/^https?:\/\//i.test(i.link.split(/\s/)[0]||"")?i.link.split(/\s/)[0]:"";
+    const brief=[`${dayLabel(i.date)}: ${i.title}`,`Format: ${i.format}`,i.pillar&&`Pillar: ${i.pillar}`,i.platforms.length&&`Platforms: ${i.platforms.join(", ")}`,...i.statuses.map(s=>`${s.name}: ${s.value}`),i.cta&&`CTA: ${i.cta}`,i.link&&`Reference: ${i.link}`,i.notes&&`Notes: ${i.notes}`,...Object.entries(i.extra).map(([k,v])=>`${k}: ${v}`)].filter(Boolean).join("\n");
+    box.hidden=false;
+    box.innerHTML=`<div class="cdet s-${i.state}"><div class="cdet-h"><span class="eyebrow">${esc(dayLabel(i.date))}${i.week?` · ${esc(i.week)}`:""}</span><button class="ghost cdet-x" aria-label="Close">✕</button></div>
+      <div class="cr-title">${esc(i.title)}</div>
+      <div class="pills"><span class="pill">${FORMAT_ICON(i.format)} ${esc(i.format||"Post")}</span><span class="pill st-${i.state}">${STATE_ICON[i.state]} ${esc(STATE_LABEL[i.state])}</span>${i.pillar?`<span class="pill">${esc(i.pillar)}</span>`:""}</div>
+      <dl class="kv">${i.platforms.length?`<dt>Platforms</dt><dd>${esc(i.platforms.join(", "))}</dd>`:""}${i.statuses.map(s=>`<dt>${esc(s.name)}</dt><dd>${esc(s.value)}</dd>`).join("")}${i.cta?`<dt>CTA</dt><dd>${esc(i.cta)}</dd>`:""}${i.link?`<dt>Reference</dt><dd>${link?`<a href="${esc(link)}" target="_blank" rel="noopener">${esc(i.link)}</a>`:esc(i.link)}</dd>`:""}${i.notes?`<dt>Notes</dt><dd class="${i.blocked?"blk":""}">${esc(i.notes)}</dd>`:""}${Object.entries(i.extra).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      <div class="bar"><button class="ghost cdet-copy">Copy brief</button></div></div>`;
+    box.querySelector(".cdet-x").onclick=()=>{box.hidden=true;};
+    box.querySelector(".cdet-copy").onclick=e=>{ const b=e.currentTarget, old=b.textContent; try{navigator.clipboard.writeText(brief).then(()=>{b.textContent="Copied ✓";setTimeout(()=>b.textContent=old,1500);},()=>{b.textContent="Copy blocked";});}catch{b.textContent="Copy blocked";} };
+    box.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+  return {parseCSV,parseDate,fromCSV,render,monthLabel,table,monthKey};
+})();
+
+const PLATFORMS={
+  instagram:{label:"Instagram",grid:true,ratio:"3/4",handle:"tararosesalon",sub:"Profile grid, newest top-left"},
+  facebook:{label:"Facebook",grid:true,ratio:"1/1",handle:"Tara Rose Salon",sub:"Page photos and videos, newest first"},
+  tiktok:{label:"TikTok",grid:true,ratio:"3/4",handle:"Tara Rose Salon",sub:"Profile grid, newest top-left"},
+  youtube:{label:"YouTube Shorts",grid:true,ratio:"9/16",handle:"Tara Rose Salon",sub:"Shorts tab, newest first"},
+  linkedin:{label:"LinkedIn",grid:true,ratio:"1.91/1",handle:"Tara Rose Salon",sub:"Company page posts, newest first"},
+  gbp:{label:"Google Business",grid:true,ratio:"4/3",handle:"Tara Rose Salon",sub:"Business Profile updates, newest first (one post per branch)"}
+};
+const PKEYS=Object.keys(PLATFORMS), GRIDKEYS=PKEYS.filter(k=>PLATFORMS[k].grid);
+const STATUS_LABEL={draft:"Draft",approved:"Approved",scheduled:"Scheduled",posted:"Posted"};
+const STATUS_ICON={draft:"✎",approved:"✓",scheduled:"◷",posted:"●"};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let data={posts:[]}, plat="instagram", view="grid", week="", statusFilter="all";
+
+const joinCaption=c=>[c.hook,c.body,c.cta].map(x=>String(x||"").trim()).filter(Boolean).join("\n\n");
+const capOf=(p,k)=>{const c=(p.captions||{})[k]||{}; return k==="gbp"?{posts:c.posts||[]}:{title:c.title||"",hook:c.hook||"",body:c.body||"",cta:c.cta||"",hashtags:c.hashtags||""};};
+const onPlat=(p,k)=>!!(p.platforms||{})[k];
+function fullText(k,c){ if(k==="gbp") return c.posts.map(x=>`${x.branch}\n${x.title}\n\n${x.body}`).join("\n\n");
+  return [k==="youtube"&&c.title?`Title: ${c.title}`:"",joinCaption(c),c.hashtags].map(x=>String(x||"").trim()).filter(Boolean).join("\n\n"); }
+const fmtWhen=iso=>{ if(!iso) return "No time set"; const d=new Date(iso+":00Z"); return isNaN(d)?iso:d.toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"UTC"}); };
+const fmtShort=iso=>{ if(!iso) return ""; const d=new Date(iso+":00Z"); return isNaN(d)?iso:d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"UTC"}); };
+const UUIDISH=/^[0-9a-f]{8}-[0-9a-f]{4}-|^IMG[_-]?\d+|^DSC|^\d{6,}/i;
+function titleOf(p){ const stem=String(p.filename||"").replace(/\.[^.]+$/,"").replace(/_+/g," ").trim(); if(stem&&!UUIDISH.test(stem)) return stem;
+  const c=capOf(p,"instagram"); const h=(p.onScreen||c.hook||"").split(/[.!?\n]/)[0].trim(); return h?(h.length>70?h.slice(0,67)+"…":h):"Untitled post"; }
+function weekKey(iso){ if(!iso) return "none"; const d=new Date(iso.slice(0,10)+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7)); return d.toISOString().slice(0,10); }
+function weekLabel(k){ if(k==="all") return "All posts"; if(k==="none") return "No date";
+  const a=new Date(k+"T00:00:00Z"), b=new Date(a.getTime()+6*864e5), f=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"}); return `${f(a)} to ${f(b)} ${b.getUTCFullYear()}`; }
+const branches=()=>String(data.branches||"").split("\n").map(l=>l.split("|")[0].trim()).filter(Boolean);
+const visible=()=>data.posts.filter(p=>statusFilter==="all"||p.status===statusFilter);
+
+function copy(text,btn){ const old=btn.textContent; const done=ok=>{btn.textContent=ok?"Copied ✓":"Select and copy";setTimeout(()=>btn.textContent=old,1600);};
+  try{ navigator.clipboard.writeText(text).then(()=>done(true),()=>done(false)); }catch{ done(false); } }
+
+function renderPipeline(){
+  const c=s=>data.posts.filter(p=>p.status===s).length;
+  const steps=[["all","All",data.posts.length],["draft","✎ Draft",c("draft")],["approved","✓ Approved",c("approved")],["scheduled","◷ Scheduled",c("scheduled")],["posted","● Posted",c("posted")]];
+  $("#pipeline").innerHTML=steps.map(([k,l,n])=>`<button class="pstep" aria-pressed="${statusFilter===k}" data-k="${k}"><span class="pl">${l}</span><span class="pn">${n}</span></button>`).join("");
+  $("#pipeline").querySelectorAll(".pstep").forEach(b=>b.onclick=()=>{statusFilter=b.dataset.k;render();});
+}
+function renderGrid(){
+  const forPlat=k=>visible().filter(p=>onPlat(p,k)).sort((a,b)=>(b.scheduledAt||"").localeCompare(a.scheduledAt||""));
+  $("#tabs").innerHTML=GRIDKEYS.map(k=>`<button class="tab" role="tab" aria-selected="${k===plat}" data-k="${k}">${picon(k)}${PLATFORMS[k].label} <span class="n">${forPlat(k).length}</span></button>`).join("");
+  $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{plat=b.dataset.k;render();});
+  const P=PLATFORMS[plat], list=forPlat(plat), g=$("#grid");
+  $("#handle").textContent=P.handle; $("#gridSub").textContent=P.sub; g.style.setProperty("--ratio",P.ratio);
+  g.innerHTML=list.length?list.map(p=>`<button class="tile" data-id="${esc(p.id)}" aria-label="${esc(titleOf(p)+", "+(STATUS_LABEL[p.status]||p.status)+", "+fmtWhen(p.scheduledAt))}">
+      ${p.thumb?`<img src="${esc(p.thumb)}" alt="${esc(p.altText||"")}" loading="lazy">`:`<span class="ph">${p.kind==="video"?"▶ ":""}${esc(titleOf(p))}</span>`}
+      <span class="st ${esc(p.status)}">${STATUS_ICON[p.status]||""} ${esc(STATUS_LABEL[p.status]||p.status)}</span>${p.kind==="video"?'<span class="kind">VIDEO</span>':""}
+      <span class="when">${esc(fmtShort(p.scheduledAt))}</span></button>`).join("")
+    :`<div class="empty"><div class="big">Nothing on ${esc(P.label)} <em>yet</em></div>${statusFilter!=="all"?"Click All above to see every post.":"Posts appear here once they are planned in the Content planner."}</div>`;
+  g.querySelectorAll(".tile").forEach(t=>t.onclick=()=>{ const p=data.posts.find(x=>x.id===t.dataset.id); week=weekKey(p.scheduledAt); setView("pack");
+    requestAnimationFrame(()=>{const el=document.getElementById("cr-"+p.id); if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1600);}}); });
+}
+function packList(){ const all=visible().slice().sort((a,b)=>(a.scheduledAt||"").localeCompare(b.scheduledAt||"")); return week==="all"?all:all.filter(p=>weekKey(p.scheduledAt)===week); }
+function packPlain(list){
+  const out=["TARA ROSE SALON: CAPTION PACK",weekLabel(week),""];
+  list.forEach((p,i)=>{ out.push("=".repeat(40),`CREATIVE ${String(i+1).padStart(2,"0")}: ${titleOf(p)}`,`${p.kind==="video"?"Video":"Photo"} · ${fmtWhen(p.scheduledAt)} (Dubai) · ${STATUS_LABEL[p.status]||p.status}`);
+    if(p.strategy) out.push(`Strategy: ${p.strategy}`); if(p.keyword) out.push(`Primary keyword: ${p.keyword}`);
+    if(p.specialist) out.push(`Specialist: ${p.specialist} ${p.handle||""}`); out.push(`Branch: ${p.branch||"All salons"}`);
+    if(p.onScreen) out.push(`On-screen text: ${p.onScreen}`); if(p.altText) out.push(`Alt text: ${p.altText}`);
+    PKEYS.filter(k=>onPlat(p,k)).forEach(k=>out.push("",`## ${PLATFORMS[k].label.toUpperCase()}`,"",fullText(k,capOf(p,k))||"(not written yet)")); out.push(""); });
+  return out.join("\n");
+}
+function renderPack(){
+  const all=visible().slice().sort((a,b)=>(a.scheduledAt||"").localeCompare(b.scheduledAt||"")), keys=[...new Set(all.map(p=>weekKey(p.scheduledAt)))].sort();
+  if(!week||(week!=="all"&&!keys.includes(week))){ const now=new Date(Date.now()+4*3600e3).toISOString().slice(0,16); const nx=all.find(p=>(p.scheduledAt||"")>=now); week=nx?weekKey(nx.scheduledAt):(keys[keys.length-1]||"all"); }
+  $("#weekSel").innerHTML=[...keys.map(k=>`<option value="${k}" ${k===week?"selected":""}>${esc(weekLabel(k))} (${all.filter(p=>weekKey(p.scheduledAt)===k).length})</option>`),`<option value="all" ${week==="all"?"selected":""}>All posts (${all.length})</option>`].join("");
+  const list=packList();
+  const head=`<div class="pack-head"><span class="eyebrow">Tara Rose Salon · Caption pack</span><h2>${esc(weekLabel(week))}</h2><p class="sub">${list.length} creative${list.length===1?"":"s"}. Hook, body and CTA on every platform, Google Business per branch. House rules: British English, no em or en dashes, no Oxford commas, no guarantee language.</p></div>`;
+  if(!list.length){ $("#pack").innerHTML=head+`<div class="empty"><div class="big">No posts in this <em>week</em></div>Choose another week.</div>`; return; }
+  $("#pack").innerHTML=head+`<div class="packlist">`+list.map((p,i)=>{
+    const on=PKEYS.filter(k=>onPlat(p,k)), dn=on.filter(k=>(p.done||{})[k]).length;
+    const plats=on.map(k=>{ const C=capOf(p,k), isDone=!!(p.done||{})[k];
+      if(k==="gbp") return `<div class="plat ${isDone?"isdone":""}"><div class="plat-h"><h3>${picon("gbp")}${isDone?"✓ ":""}Google Business Profile · ${C.posts.length} branch post${C.posts.length===1?"":"s"}</h3></div>
+        ${C.posts.length?`<div class="gbp-grid">${C.posts.map((x,j)=>`<div class="gbp-card"><span class="bt">${esc(x.branch)}</span><span class="tt">${esc(x.title)}</span><span class="bd">${esc(x.body)}</span><div class="bar"><button class="ghost cp" data-id="${esc(p.id)}" data-k="gbp" data-j="${j}">Copy</button><span class="count">${x.body.length} characters</span></div></div>`).join("")}</div>`:`<p class="sub">Not written yet.</p>`}</div>`;
+      const filled=C.hook||C.body||C.cta;
+      return `<div class="plat ${isDone?"isdone":""}"><div class="plat-h"><h3>${picon(k)}${isDone?"✓ ":""}${esc(PLATFORMS[k].label)}</h3>${filled?`<button class="ghost cp" data-id="${esc(p.id)}" data-k="${k}">Copy</button>`:""}</div>
+        ${filled?`<div class="copybox">${k==="youtube"&&C.title?`<span class="seg">Title</span>${esc(C.title)}\n\n`:""}${C.hook?`<span class="seg">Hook</span>${esc(C.hook)}\n\n`:""}${C.body?`<span class="seg">Body</span>${esc(C.body)}\n\n`:""}${C.cta?`<span class="seg">CTA</span>${esc(C.cta)}`:""}${C.hashtags?`\n\n<span class="tags">${esc(C.hashtags)}</span>`:""}</div>`:`<p class="sub">Not written yet.</p>`}</div>`; }).join("");
+    return `<article class="creative" id="cr-${esc(p.id)}"><div class="cr-top">${p.thumb?`<img src="${esc(p.thumb)}" alt="${esc(p.altText||"")}" loading="lazy">`:`<div class="noimg"></div>`}
+      <div><span class="eyebrow">Creative ${String(i+1).padStart(2,"0")} · ${p.kind==="video"?"Video":"Photo"}</span><div class="cr-title">${esc(titleOf(p))}</div>
+      <div class="pills"><span class="pill ${esc(p.status)}">${STATUS_ICON[p.status]||""} ${esc(STATUS_LABEL[p.status]||p.status)}</span><span class="pill">${esc(fmtWhen(p.scheduledAt))}</span></div>
+      ${on.length?`<div class="cr-prog"><div class="meter"><div style="width:${Math.round(dn/on.length*100)}%"></div></div>${dn} of ${on.length} platform${on.length===1?"":"s"} done</div>`:""}
+      ${p.strategy?`<p class="strategy">${esc(p.strategy)}</p>`:""}
+      <dl class="kv">${p.keyword?`<dt>Keyword</dt><dd>${esc(p.keyword)}</dd>`:""}${p.specialist?`<dt>Specialist</dt><dd>${esc(p.specialist)} ${esc(p.handle)}</dd>`:""}<dt>Branch</dt><dd>${esc(p.branch||"All salons")}</dd>${p.onScreen?`<dt>On-screen</dt><dd>${esc(p.onScreen)}</dd>`:""}${p.altText?`<dt>Alt text</dt><dd>${esc(p.altText)}</dd>`:""}</dl></div></div>${plats}</article>`;
+  }).join("")+`</div>
+  <div class="footer-card" style="margin-top:18px">
+    <div><h4>Posting notes</h4><p>Instagram: hook first line, save prompt last line before hashtags, alt text in advanced settings. Facebook: link in comments for reach, no hashtags in the first 2 lines. TikTok: on-screen text burned in, captions lowercase as written. Google Business: post each branch separately.</p></div>
+    <div><h4>AEO</h4><p>Each asset answers the implied question in the first 40 words, with the question in the hook.</p></div>
+    <div><h4>GEO</h4><p>Specialist name, role, Tara Rose Salon, branch and city on every platform. Expertise shown through the method, not claims.</p></div>
+    <div><h4>Local</h4><p>${esc(branches().join(", "))} · ${esc(data.hours||"")}</p></div>
+  </div>`;
+  $("#pack").querySelectorAll(".cp").forEach(b=>b.onclick=()=>{ const p=data.posts.find(x=>x.id===b.dataset.id), k=b.dataset.k, C=capOf(p,k);
+    copy(k==="gbp"?`${C.posts[+b.dataset.j].title}\n\n${C.posts[+b.dataset.j].body}`:fullText(k,C),b); });
+}
+let campSel="", campUi={view:"table",month:"",fmt:"",plat:"",state:"",canImport:false,onChange:()=>renderCamp()};
+function renderCamp(){
+  const cs=(data.campaigns||[]).slice().sort((a,b)=>String(b.importedAt||"").localeCompare(String(a.importedAt||"")));
+  const c=cs.find(x=>x.id===campSel)||cs[0]||null; if(c) campSel=c.id;
+  $("#campSel").innerHTML=cs.length?cs.map(x=>`<option value="${esc(x.id)}" ${x.id===campSel?"selected":""}>${esc(x.name)} (${x.items.length} posts)</option>`).join(""):"<option>No campaigns yet</option>";
+  $("#campSel").disabled=!cs.length;
+  CAMP.render($("#camp"),c,campUi);
+}
+function setView(v){ view=v; $("#vGrid").setAttribute("aria-pressed",v==="grid"); $("#vPack").setAttribute("aria-pressed",v==="pack"); $("#vCamp").setAttribute("aria-pressed",v==="campaign");
+  $("#gridView").hidden=v!=="grid"; $("#packView").hidden=v!=="pack"; $("#campView").hidden=v!=="campaign"; $("#pipeline").hidden=v==="campaign"; render(); }
+function render(){ renderPipeline(); if(view==="grid") renderGrid(); else if(view==="pack") renderPack(); else renderCamp(); }
+$("#vGrid").onclick=()=>setView("grid"); $("#vPack").onclick=()=>setView("pack"); $("#vCamp").onclick=()=>setView("campaign");
+$("#campSel").onchange=()=>{campSel=$("#campSel").value;campUi.month="";renderCamp();};
+$("#weekSel").onchange=()=>{week=$("#weekSel").value;renderPack();};
+$("#packCopy").onclick=()=>copy(packPlain(packList()),$("#packCopy"));
+
+function startWith(d,note){
+  data=d; data.posts=(d.posts||[]).filter(p=>p.status!=="hidden");
+  const t=new Date(d.exportedAt); $("#updated").textContent=(isNaN(t)?"Read-only view of the plan":`Plan last updated ${t.toLocaleString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Dubai"})} (Dubai)`)+(note||"");
+  render();
+}
+function builtIn(){ try{ return JSON.parse(document.getElementById("planData").textContent); }catch{ return null; } }
+/* Load the latest data/posts.json; if the page was opened as a file or the data file is missing, use the copy built into this page. */
+fetch("data/posts.json",{cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d=>startWith(d,""))
+  .catch(()=>{ const d=builtIn(); if(d) startWith(d," · built-in copy"); else { $("#updated").textContent="The plan could not be loaded."; render(); } });
+</script>
+</body>
+</html>
