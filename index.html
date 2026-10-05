@@ -241,6 +241,27 @@ nav.vtabs button[aria-pressed="true"]{background:var(--mint);color:var(--mint-in
 .ctable th{background:var(--raise)}
 .foot{margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
 .foot a{color:var(--mint-text)}
+
+/* Post to sheet: tap a grid photo, pick platforms, copy each caption and open the platform */
+.sheet-bg{position:fixed;inset:0;z-index:50;background:rgba(23,21,15,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.sheet-bg{align-items:center}}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:18px;width:min(580px,100%);max-height:100%;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.sh-head{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;align-items:start}
+.sh-head img,.sh-head .noimg{width:72px;aspect-ratio:3/4;object-fit:cover;border-radius:8px;background:var(--raise)}
+.sh-head .cr-title{font-size:1.2rem;margin:2px 0 6px}
+.sh-x{min-height:40px;padding:4px 12px}
+.sh-step{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--mint-text);margin:4px 0 0}
+.plist{display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--chip);margin:0;font-family:var(--sans);text-transform:none;letter-spacing:0;color:var(--ink);font-size:15px;font-weight:400}
+.prow:has(input:checked){border-color:var(--mint);background:var(--mint-dim)}
+.prow input{width:22px;height:22px;accent-color:var(--mint);margin:0;cursor:pointer}
+.prow .pn{font-weight:700;display:inline-flex;align-items:center;gap:8px}
+.prow .ph2{font-size:12.5px;color:var(--muted)}
+.prow .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.prow .acts .btn,.prow .acts button{min-height:36px;padding:5px 12px;font-size:13px}
+.sh-foot{display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.sh-tip{font-size:13px;color:var(--muted);margin:0}
+@media (max-width:520px){.prow{grid-template-columns:24px minmax(0,1fr)}.prow .acts{grid-column:2;justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -264,7 +285,7 @@ nav.vtabs button[aria-pressed="true"]{background:var(--mint);color:var(--mint-in
     <div class="tabs" role="tablist" aria-label="Platform" id="tabs"></div>
     <div class="profile" style="margin-top:16px"><div class="avatar" aria-hidden="true">TRS</div><div><div class="handle" id="handle"></div><div class="sub" id="gridSub"></div></div></div>
     <div class="grid" id="grid"></div>
-    <p class="sub" style="margin-top:10px">Tap a post to see its complete captions.</p>
+    <p class="sub" style="margin-top:10px">Tap a photo to post it to several platforms at once.</p>
   </section>
 
   <section id="campView" hidden>
@@ -542,8 +563,47 @@ function renderGrid(){
       <span class="st ${esc(p.status)}">${STATUS_ICON[p.status]||""} ${esc(STATUS_LABEL[p.status]||p.status)}</span>${p.kind==="video"?'<span class="kind">VIDEO</span>':""}
       <span class="when">${esc(fmtShort(p.scheduledAt))}</span></button>`).join("")
     :`<div class="empty"><div class="big">Nothing on ${esc(P.label)} <em>yet</em></div>${statusFilter!=="all"?"Click All above to see every post.":"Posts appear here once they are planned in the Content planner."}</div>`;
-  g.querySelectorAll(".tile").forEach(t=>t.onclick=()=>{ const p=data.posts.find(x=>x.id===t.dataset.id); week=weekKey(p.scheduledAt); setView("pack");
-    requestAnimationFrame(()=>{const el=document.getElementById("cr-"+p.id); if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1600);}}); });
+  g.querySelectorAll(".tile").forEach(t=>t.onclick=()=>openShare(t.dataset.id));
+}
+function goPack(id){ const p=data.posts.find(x=>x.id===id); if(!p) return; week=weekKey(p.scheduledAt); setView("pack");
+  requestAnimationFrame(()=>{const el=document.getElementById("cr-"+p.id); if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1600);}}); }
+const OPEN_URL={instagram:"https://www.instagram.com/",facebook:"https://business.facebook.com/latest/composer",tiktok:"https://www.tiktok.com/upload",youtube:"https://studio.youtube.com/",linkedin:"https://www.linkedin.com/",gbp:"https://business.google.com/"};
+const SHEET_ORDER=["instagram","facebook","tiktok","youtube","linkedin","gbp"];
+let lastTile=null;
+function openShare(id){
+  const p=data.posts.find(x=>x.id===id); if(!p) return; lastTile=document.activeElement;
+  const has=k=>{ const C=capOf(p,k); return k==="gbp"?C.posts.length>0:!!(C.hook||C.body||C.cta); };
+  const bg=document.createElement("div"); bg.className="sheet-bg"; bg.id="shareBg";
+  bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <div class="sh-head">${p.thumb?`<img src="${esc(p.thumb)}" alt="${esc(p.altText||"")}">`:`<div class="noimg"></div>`}
+      <div><span class="eyebrow">Post to</span><div class="cr-title" id="shTitle">${esc(titleOf(p))}</div>
+      <div class="pills"><span class="pill ${esc(p.status)}">${STATUS_ICON[p.status]||""} ${esc(STATUS_LABEL[p.status]||p.status)}</span><span class="pill">${esc(fmtWhen(p.scheduledAt))}</span></div></div>
+      <button class="ghost sh-x" id="shClose" aria-label="Close">✕</button></div>
+    <p class="sh-step">1. Tick where it goes</p>
+    <div class="plist">${SHEET_ORDER.map(k=>{ const on=onPlat(p,k), ok=has(k);
+      return `<label class="prow" for="sh-${k}"><input type="checkbox" id="sh-${k}" data-k="${k}" ${on?"checked":""}>
+        <span><span class="pn">${picon(k)}${esc(PLATFORMS[k].label)}</span><br><span class="ph2">${ok?(k==="gbp"?`Caption ready for ${capOf(p,k).posts.length} branch${capOf(p,k).posts.length===1?"":"es"}`:"Caption ready"):"No caption yet. Write it in the Content planner in Claude"}</span></span>
+        <span class="acts">${ok?`<button type="button" class="ghost sh-cp" data-k="${k}">Copy caption</button>`:""}<a class="btn ghost" href="${OPEN_URL[k]}" target="_blank" rel="noopener">Open</a></span></label>`; }).join("")}</div>
+    <p class="sh-step">2. Copy everything at once, or schedule in Metricool</p>
+    <div class="sh-foot">
+      <button id="shCopyAll">Copy captions for ticked</button>
+      ${p.thumb?`<a class="btn ghost" id="shImg" href="${esc(p.thumb)}" download="${esc((p.filename||titleOf(p)).replace(/\.[^.]+$/,""))}.jpg">Download photo</a>`:""}
+      <a class="btn ghost" href="https://app.metricool.com/planner" target="_blank" rel="noopener">Open Metricool</a>
+      <button class="ghost" id="shPack">See in caption pack</button>
+    </div>
+    <p class="sh-tip">This website is read-only, so ticks here are just for copying. To change which platforms a post goes to for good, use the Content planner in Claude.</p>
+  </div>`;
+  document.body.appendChild(bg); document.body.style.overflow="hidden";
+  const close=()=>{ bg.remove(); document.body.style.overflow=""; document.removeEventListener("keydown",onKey); if(lastTile&&lastTile.focus) lastTile.focus({preventScroll:true}); };
+  const onKey=e=>{ if(e.key==="Escape") close(); }; document.addEventListener("keydown",onKey);
+  bg.onclick=e=>{ if(e.target===bg) close(); };
+  bg.querySelector("#shClose").onclick=close;
+  bg.querySelector("#shPack").onclick=()=>{ close(); goPack(p.id); };
+  bg.querySelectorAll(".sh-cp").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); copy(fullText(b.dataset.k,capOf(p,b.dataset.k)),b); });
+  bg.querySelector("#shCopyAll").onclick=e=>{ const ks=[...bg.querySelectorAll(".prow input:checked")].map(i=>i.dataset.k).filter(has);
+    if(!ks.length){ const b=e.currentTarget, o=b.textContent; b.textContent="Tick a platform with a caption"; setTimeout(()=>b.textContent=o,1800); return; }
+    copy(ks.map(k=>`## ${PLATFORMS[k].label.toUpperCase()}\n\n${fullText(k,capOf(p,k))}`).join("\n\n"),e.currentTarget); };
+  const sh=bg.querySelector(".sheet"); sh.scrollTop=0; bg.querySelector("#shClose").focus({preventScroll:true});
 }
 function packList(){ const all=visible().slice().sort((a,b)=>(a.scheduledAt||"").localeCompare(b.scheduledAt||"")); return week==="all"?all:all.filter(p=>weekKey(p.scheduledAt)===week); }
 function packPlain(list){
