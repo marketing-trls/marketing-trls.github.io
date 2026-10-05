@@ -379,6 +379,12 @@ label{font-size:11.5px;margin-bottom:7px}
 /* light mode polish */
 .panel,.focus,.pstep,.cstat,.creative,.cdet,.sheet,.arow,.tbl-wrap{box-shadow:var(--shadow)}
 .tile .st.approved{color:#fff}
+.ai-sheet p{margin:0 0 8px;font-size:14.5px}
+.ai-step{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;align-items:start}
+.ai-step>b{width:28px;height:28px;border-radius:50%;background:var(--mint);color:var(--mint-ink);display:grid;place-items:center;font-size:14px}
+.ai-sheet textarea{width:100%;min-height:120px}
+.ai-key summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--mint-text);text-transform:none;letter-spacing:0;font-family:var(--sans)}
+.ai-key p{margin:8px 0}
 
 /* website mode */
 .notice .site-note a{color:var(--mint)}
@@ -1339,7 +1345,8 @@ label{font-size:11.5px;margin-bottom:7px}
     return [...out.entries()].map(([id,d])=>{ const {id:_,...rest}=d; return {id,data:()=>({...rest})}; });
   };
   const settingsDoc=()=>({...{branches:base.branches||"",hours:base.hours||"",folderId:(cfg&&cfg.driveFolderId)||""},...(over.settings||{})});
-  const fire=coll=>{ listeners[coll].forEach(f=>{ try{ f(); }catch(e){ console.error(e); } }); };
+  /* like the real database, tell listeners after the write has returned */
+  const fire=coll=>setTimeout(()=>listeners[coll].forEach(f=>{ try{ f(); }catch(e){ console.error(e); } }),0);
   const docRef=(coll,id)=>({
     async set(data){ over[coll][id]={...data}; persist(); fire(coll); },
     async update(data){ over[coll][id]={...(over[coll][id]||{}),...data}; persist(); fire(coll); },
@@ -1361,7 +1368,7 @@ label{font-size:11.5px;margin-bottom:7px}
   /* Google Drive on the website: sign in with Google in the browser and read the upload folder through the Drive API.
      Needs an OAuth client ID in data/site-config.json (googleClientId). The access token stays in this tab only. */
   let cfg={};
-  const cfgLoaded=fetch("data/site-config.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(c=>{ cfg=c||{}; if(cfg.googleClientId) loadGsi(); return cfg; });
+  const cfgLoaded=fetch("data/site-config.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(c=>{ cfg=c||{}; if(cfg.googleClientId) loadGsi().catch(()=>{ gsi=null; }); return cfg; });
   window.__SITE_CFG=()=>cfg;
   const SCOPE="https://www.googleapis.com/auth/drive.readonly";
   let gsi=null, tok=null;
@@ -1410,9 +1417,66 @@ label{font-size:11.5px;margin-bottom:7px}
     }
     throw {code:"tool_error",message:"not available on the website"};
   } };
+
+  /* AI captions on the website. Without a key: copy the prompt into Meta AI, ChatGPT or Claude and paste the reply back.
+     With an Anthropic API key (kept only in this browser): written automatically. */
+  const AKEY="trs-anthropic-key";
+  const apiKey=()=>{ try{ return localStorage.getItem(AKEY)||""; }catch{ return ""; } };
+  const toB64=blob=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(",")[1]||""); fr.onerror=rej; fr.readAsDataURL(blob); });
+  function parseReply(t){
+    t=String(t||"").replace(/```(?:json)?/gi,"").replace(/[“”]/g,'"').replace(/[‘’]/g,"'");
+    const a=t.indexOf("{"), b=t.lastIndexOf("}"); if(a<0||b<=a) throw {code:"invalid_json"};
+    try{ return JSON.parse(t.slice(a,b+1)); }catch{ throw {code:"invalid_json"}; }
+  }
+  async function viaApi(prompt,opts){
+    const content=[];
+    for(const img of (opts&&opts.images)||[]){ try{ content.push({type:"image",source:{type:"base64",media_type:img.type||"image/jpeg",data:await toB64(img)}}); }catch{} }
+    content.push({type:"text",text:prompt});
+    let r;
+    try{ r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":apiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:4096,messages:[{role:"user",content}]})}); }catch{ throw {code:"site_net"}; }
+    if(r.status===401||r.status===403) throw {code:"site_key"};
+    if(r.status===429) throw {code:"rate_limited"};
+    if(!r.ok) throw {code:"site_api"};
+    const j=await r.json(); return parseReply((j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n"));
+  }
+  function viaPaste(prompt,opts){
+    return new Promise((resolve,reject)=>{
+      const img=((opts&&opts.images)||[])[0], imgUrl=img?URL.createObjectURL(img):"";
+      const bg=document.createElement("div"); bg.className="sheet-bg"; bg.style.zIndex="60";
+      bg.innerHTML=`<div class="sheet ai-sheet" role="dialog" aria-modal="true" aria-labelledby="aiT">
+        <div class="sh-top" style="grid-template-columns:minmax(0,1fr) auto"><div><span class="eyebrow">Write captions with AI</span><div class="sh-title" id="aiT">3 quick steps</div></div><button class="ghost sh-x" data-x aria-label="Close">✕</button></div>
+        <div class="ai-step"><b>1</b><div><p>Copy the prompt. It already has your brand voice, the platforms and the SEO, AEO and GEO rules.</p>
+          <div class="bar"><button data-copy>Copy prompt</button>${img?`<a class="btn ghost" href="${imgUrl}" download="post-photo.jpg">Download photo</a>`:""}</div></div></div>
+        <div class="ai-step"><b>2</b><div><p>Paste it into any AI${img?" and attach the photo":""}, then send.</p>
+          <div class="bar"><a class="btn ghost" href="https://www.meta.ai" target="_blank" rel="noopener">Meta AI</a><a class="btn ghost" href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a><a class="btn ghost" href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a></div></div></div>
+        <div class="ai-step"><b>3</b><div><p>Copy the AI's whole reply and paste it here.</p>
+          <textarea data-reply rows="6" placeholder="Paste the reply here"></textarea>
+          <div class="sh-msg err" data-err></div></div></div>
+        <details class="ai-key"><summary>Skip the copying: write automatically</summary>
+          <p class="sub">Add an Anthropic API key from console.anthropic.com and captions are written straight away. It is billed by Anthropic, roughly 1 to 3 US cents per post, and stays only in this browser.</p>
+          <div class="bar"><input type="password" data-key placeholder="sk-ant-..." autocomplete="off" style="flex:1;min-width:200px"><button class="ghost" data-savekey>Save key</button></div></details>
+        <div class="bar"><button data-use>Use this reply</button><button class="ghost" data-x>Cancel</button></div></div>`;
+      document.body.appendChild(bg);
+      const q=s=>bg.querySelector(s), done=()=>{ bg.remove(); if(imgUrl) setTimeout(()=>URL.revokeObjectURL(imgUrl),60000); };
+      bg.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{ done(); reject({code:"cancelled"}); });
+      q("[data-copy]").onclick=e=>{ const b=e.currentTarget; try{ navigator.clipboard.writeText(prompt).then(()=>{b.textContent="Copied ✓";},()=>{b.textContent="Copy blocked";}); }catch{ b.textContent="Copy blocked"; } setTimeout(()=>b.textContent="Copy prompt",1800); };
+      q("[data-use]").onclick=()=>{ try{ const out=parseReply(q("[data-reply]").value); done(); resolve(out); }
+        catch{ q("[data-err]").textContent="That doesn't look like the full reply. Copy everything the AI wrote, including the { } brackets, and paste again."; } };
+      q("[data-savekey]").onclick=async()=>{ const k=q("[data-key]").value.trim(); if(!/^sk-/.test(k)){ q("[data-err]").textContent="That key doesn't look right. It starts with sk-ant-."; return; }
+        try{ localStorage.setItem(AKEY,k); }catch{}
+        q("[data-savekey]").textContent="Writing…"; try{ const out=await viaApi(prompt,opts); done(); resolve(out); }
+        catch(e){ try{ localStorage.removeItem(AKEY); }catch{} q("[data-savekey]").textContent="Save key"; q("[data-err]").textContent=e&&e.code==="site_key"?"Anthropic did not accept that key. Check it and try again.":"Could not reach Anthropic. Try again, or use the copy and paste steps."; } };
+      q("[data-copy]").focus({preventScroll:true});
+    });
+  }
+  const sample={ get manual(){ return !apiKey(); }, async limits(){ return {images:true}; },
+    async json(prompt,opts){ return apiKey()?viaApi(prompt,opts):viaPaste(prompt,opts); } };
+  window.__SITE_FORGET_KEY=()=>{ try{ localStorage.removeItem(AKEY); }catch{} };
+  window.__SITE_HAS_KEY=()=>!!apiKey();
   window.__SITE_HAS_EDITS=()=>Object.keys(over.posts).length+Object.keys(over.campaigns).length+(over.settings?1:0);
   window.__SITE_RESET=()=>{ try{ localStorage.removeItem(KEY); }catch{} location.reload(); };
-  window.claude={ async use(name){ if(name==="db") return db; if(name==="downloads") return downloads; if(name==="user") return {can:async()=>true}; if(name==="mcp") return mcp; return null; } };
+  window.claude={ async use(name){ if(name==="db") return db; if(name==="downloads") return downloads; if(name==="user") return {can:async()=>true}; if(name==="mcp") return mcp; if(name==="sample") return sample; return null; } };
 })();
 </script>
 <script>
@@ -1614,7 +1678,7 @@ function siteStatus(){
   const t=window.__SITE_DATA&&new Date(window.__SITE_DATA.exportedAt);
   const when=t&&!isNaN(t)?t.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Dubai"}):"";
   setStatus(`<span class="site-note"><b>Website planner.</b> Plan published ${esc(when)}${window.__SITE_BUILTIN?" (built-in copy)":""}. ${n?`You have <b>${n} edit${n===1?"":"s"}</b> saved in this browser only.`:"Edits you make here save in this browser."}
-    ${window.__SITE_DRIVE_CONNECTED&&window.__SITE_DRIVE_CONNECTED()?"Google Drive is connected.":"Use <b>Sync with Drive</b> to pull new photos (you sign in to Google the first time)."} For Claude writing, <a href="${PLANNER_URL}" target="_blank" rel="noopener">open the planner in Claude</a>.</span>
+    ${window.__SITE_DRIVE_CONNECTED&&window.__SITE_DRIVE_CONNECTED()?"Google Drive is connected.":"Use <b>Sync with Drive</b> to pull new photos (you sign in to Google the first time)."} Captions: use <b>Write all captions with AI</b> or <b>Audit &amp; optimise</b> in the editor.</span>
     ${n?`<span class="bar"><button class="ghost" id="siteExport">Export for website</button><button class="ghost" id="siteReset">Discard my edits</button></span>`:""}${window.__SITE_SAVED_ERR?`<span class="site-err">This browser is full, so the last edit was not kept. Export now.</span>`:""}`);
   const ex=$("#siteExport"); if(ex) ex.onclick=()=>$("#packExport").click();
   const rs=$("#siteReset"); if(rs) rs.onclick=()=>{ if(rs.dataset.c!=="1"){ rs.dataset.c="1"; rs.textContent="Click again to discard"; setTimeout(()=>{rs.dataset.c="";rs.textContent="Discard my edits";},4000); return; } window.__SITE_RESET(); };
@@ -1762,7 +1826,7 @@ function renderDetail(){
           <div id="checks"></div>
           ${audit&&audit.length?`<div class="auditbox"><strong>What the last audit changed</strong><ul>${audit.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
           <details class="tips"><summary>Writing tips for ${esc(P.label)}</summary><p class="plathint">${esc(P.rules)}</p></details>`}
-        <div class="bar"><button class="ghost" id="regen" ${ro} ${sample?"":"hidden"}>Write all captions with Claude</button></div>
+        <div class="bar"><button class="ghost" id="regen" ${ro} ${sample?"":"hidden"}>${window.__SITE?"Write all captions with AI":"Write all captions with Claude"}</button></div>
       </div>
     </details>
 
@@ -2143,12 +2207,16 @@ function captionErr(e){
   if(c==="not_granted"||c==="sampling_disabled") return "Claude captions are turned off for you on this page. Basic captions were used.";
   if(c==="rate_limited") return "Claude usage limit reached. Basic captions were used. Try again later.";
   if(c==="refused") return "Claude declined this file. Write the captions by hand.";
+  if(c==="cancelled") return "Cancelled. Nothing was changed.";
+  if(c==="site_key") return "The Anthropic API key was not accepted. Captions were not changed.";
+  if(c==="site_net"||c==="site_api") return "Could not reach Anthropic. Try again in a minute.";
+  if(c==="invalid_json"&&window.__SITE) return "That reply could not be read. Try again and paste the AI's whole reply.";
   return "Claude could not write these captions. Try again.";
 }
 
 async function generate(p,mode,isRevision){
   const btn=isRevision?$("#revRewrite"):$(mode==="audit"?"#auditBtn":"#regen"); const label=btn?.textContent;
-  if(btn){btn.disabled=true;btn.textContent=mode==="audit"?"Auditing…":"Claude is writing…";} toast("Claude is working. This can take up to a minute.");
+  if(btn){btn.disabled=true;btn.textContent=mode==="audit"?"Auditing…":"Claude is writing…";} toast(sample&&sample.manual?"Follow the 3 steps in the box to write the captions.":"Claude is working. This can take up to a minute.");
   try{
     const D=getDraft(p);
     if(!PKEYS.some(k=>D.platforms[k])) throw {code:"none"};
@@ -2224,7 +2292,7 @@ async function sync(){
       catch(e){ if(typeof e?.code==="string"&&e.code!=="tool_error") throw e; if(kind==="image"){ skipped.push(`${name} (this file type cannot be shown, export it as JPG or PNG)`); continue; } }
       const D={platforms,captions:null,notes:"",branch:"",specialist:"",handle:"",keyword:"",mention:""};
       let r2,err="";
-      if(sample){ try{ r2=await askClaude({mode:"write",filename:name,kind,imageBlob:pv.big,D}); }catch(e){ err=captionErr(e); } }
+      if(sample&&!sample.manual){ try{ r2=await askClaude({mode:"write",filename:name,kind,imageBlob:pv.big,D}); }catch(e){ err=captionErr(e); } }
       else err="Basic captions (Claude is not available in this view). Use Write all captions later.";
       if(!r2) r2={...fallbackCaptions(name,platforms),audit:{},strategy:"",keyword:"",onScreen:""};
       const captions=cleanCaptions({captions:r2.captions});
