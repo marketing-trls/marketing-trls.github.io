@@ -481,6 +481,7 @@ label{font-size:11.5px;margin-bottom:7px}
       <div><label for="auditInput">Your audit prompt (used by Audit &amp; optimise and the Meta AI prompt)</label><textarea id="auditInput" style="min-height:90px"></textarea></div>
       <div class="bar"><button id="saveSettings">Save settings</button><span class="toast" id="settingsToast"></span></div>
       <p class="sub">Website: the public read-only version lives at <a href="https://marketing-trls.github.io/" target="_blank" rel="noopener">marketing-trls.github.io</a>. To update it, open Caption pack, click <b>Export for website</b>, then upload <b>posts.json</b> to the <b>data</b> folder of the <a href="https://github.com/marketing-trls/marketing-trls.github.io/tree/main/data" target="_blank" rel="noopener">marketing-trls.github.io</a> repository on GitHub.</p>
+      <p class="sub"><b>Choosing a thumbnail:</b> upload a photo with the same name as the post's file plus <b>-cover</b>, for example <b>Gloss-reel-cover.jpg</b> for <b>Gloss-reel.mp4</b>, then click Sync with Drive. It becomes the thumbnail, Claude writes the captions from it, and it never becomes a post of its own. Delete it and the planner goes back to a frame from the video.</p>
       <p class="sub">How it works: upload photos and videos to the Drive folder. The planner checks the folder when you open it and tells you about new, revised or removed files. New files get the next free posting time and hook, body and call-to-action captions for every platform, written by Claude in the Tara Rose voice and optimised for SEO, AEO, GEO and AI answers. Fill in the specialist, branch and keyword on a post, then click <b>Audit &amp; optimise</b> to run your audit prompt. Captions use your own Claude plan; the first time, Claude asks you to allow it.</p>
     </div>
   </details>
@@ -2288,24 +2289,40 @@ async function generate(p,mode,isRevision){
 }
 
 /* Compare the Drive folder with the planner: new, revised and removed files. Reads only. */
+/* Cover images: a photo named like the post's file plus "-cover" (Gloss-reel-cover.jpg for Gloss-reel.mp4)
+   becomes that post's thumbnail, and Claude writes the captions from it. It never becomes a post of its own. */
+const stemOf=n=>String(n||"").replace(/\.[^.]+$/,"").trim().toLowerCase();
+const COVER_RE=/[\s_-]*cover$/i;
+const isCover=f=>kindOf(f)==="image"&&COVER_RE.test(stemOf(f.title||f.name));
+function coverMap(files){ const m=new Map(); files.filter(isCover).forEach(f=>{ const k=stemOf(f.title||f.name).replace(COVER_RE,""); const o=m.get(k); if(!o||String(f.modifiedTime||"")>String(o.modifiedTime||"")) m.set(k,f); }); return m; }
+const coverFor=(covers,f)=>covers.get(stemOf(f.title||f.name))||null;
+async function thumbFor(f,kind,cover){
+  if(cover){ try{ const pv=await preview(cover,"image"); if(pv.thumb) return pv; }catch(e){ if(typeof e?.code==="string"&&e.code!=="tool_error") throw e; } }
+  return preview(f,kind);
+}
 async function checkDrive(){
-  const files=await listFolder(folderId());
-  const byId=new Map(files.map(f=>[f.id,f])), known=new Set(posts.map(p=>p.id));
-  const fresh=files.filter(f=>!known.has(f.id)), revised=[],baseline=[],missing=[],back=[];
+  const all=await listFolder(folderId()), covers=coverMap(all), files=all.filter(f=>!isCover(f));
+  const byId=new Map(all.map(f=>[f.id,f])), known=new Set(posts.map(p=>p.id));
+  const fresh=files.filter(f=>!known.has(f.id)), revised=[],baseline=[],missing=[],back=[],coverChanges=[];
   for(const p of posts){
     const f=byId.get(p.id);
+    if(f&&!isCover(f)){ const c=coverFor(covers,f);
+      if(c&&(p.coverId!==c.id||p.coverModified!==(c.modifiedTime||""))) coverChanges.push([p,f,c]);
+      else if(!c&&p.coverId) coverChanges.push([p,f,null]); }
     if(!f){ if(p.status!=="hidden"&&p.status!=="posted"&&!String(p.driveState||"").startsWith("missing")) missing.push(p); continue; }
     if(String(p.driveState||"").startsWith("missing")) back.push([p,f]);
     if(!p.driveModified) baseline.push([p,f]);
     else if(f.modifiedTime&&f.modifiedTime>p.driveModified) revised.push([p,f]);
   }
-  return {files,fresh,revised,baseline,missing,back};
+  const revisedIds=new Set(revised.map(([p])=>p.id));
+  return {files,covers,fresh,revised,baseline,missing,back,coverChanges:coverChanges.filter(([p])=>!revisedIds.has(p.id))};
 }
 function describe(r){
   const bits=[];
   if(r.fresh.length) bits.push(`${r.fresh.length} new file${r.fresh.length===1?"":"s"}`);
   if(r.revised.length) bits.push(`${r.revised.length} revised file${r.revised.length===1?"":"s"}`);
   if(r.missing.length) bits.push(`${r.missing.length} file${r.missing.length===1?"":"s"} removed`);
+  if(r.coverChanges&&r.coverChanges.length) bits.push(`${r.coverChanges.length} new cover image${r.coverChanges.length===1?"":"s"}`);
   return bits.join(", ");
 }
 async function autoCheck(){
@@ -2333,17 +2350,24 @@ async function sync(){
     for(const [i,[p,f]] of r.revised.entries()){
       $("#progress").textContent=`Updating revised file ${i+1} of ${r.revised.length}: ${f.title||p.filename}`;
       let pv={thumb:p.thumb||"",big:null};
-      try{ pv=await preview(f,kindOf(f)); if(!pv.thumb) pv.thumb=p.thumb||""; }catch(e){ if(typeof e?.code==="string"&&e.code!=="tool_error") throw e; }
+      const cv=coverFor(r.covers,f);
+      try{ pv=await thumbFor(f,kindOf(f),cv); if(!pv.thumb) pv.thumb=p.thumb||""; }catch(e){ if(typeof e?.code==="string"&&e.code!=="tool_error") throw e; }
       const note=`Updated in Drive on ${fmtDate(f.modifiedTime)}.`+(p.status==="scheduled"?" Replace the media in Metricool.":" Check the captions still fit.");
-      await writePost(p.id,{thumb:pv.thumb,fileSize:Number(f.fileSize||0),filename:f.title||p.filename,driveModified:f.modifiedTime||nowIso,revision:note,kind:kindOf(f)});
+      await writePost(p.id,{thumb:pv.thumb,fileSize:Number(f.fileSize||0),filename:f.title||p.filename,driveModified:f.modifiedTime||nowIso,revision:note,kind:kindOf(f),coverId:cv?cv.id:"",coverModified:cv?(cv.modifiedTime||""):""});
       updated++;
+    }
+    let covered=0;
+    for(const [i,[p,f,c]] of r.coverChanges.entries()){
+      $("#progress").textContent=`${c?"Using the cover image":"Cover removed, using the video"} for ${i+1} of ${r.coverChanges.length}: ${f.title||p.filename}`;
+      try{ const pv=await thumbFor(f,kindOf(f),c); if(pv.thumb){ await writePost(p.id,{thumb:pv.thumb,coverId:c?c.id:"",coverModified:c?(c.modifiedTime||""):""}); covered++; } }
+      catch(e){ if(typeof e?.code==="string"&&e.code!=="tool_error") throw e; }
     }
     const batch=r.fresh.slice(0,6), taken=new Set(live().map(p=>p.scheduledAt).filter(Boolean));
     for(const [i,f] of batch.entries()){
       const name=f.title||f.name||f.id, kind=kindOf(f), platforms=defaultPlatforms(kind);
       $("#progress").textContent=`Adding ${i+1} of ${batch.length}: ${name}. Claude is writing captions for ${PKEYS.filter(k=>platforms[k]).length} platforms.`;
-      let pv={thumb:"",big:null};
-      try{ pv=await preview(f,kind); }
+      let pv={thumb:"",big:null}; const cv=coverFor(r.covers,f);
+      try{ pv=await thumbFor(f,kind,cv); }
       catch(e){ if(typeof e?.code==="string"&&e.code!=="tool_error") throw e; if(kind==="image"){ skipped.push(`${name} (this file type cannot be shown, export it as JPG or PNG)`); continue; } }
       const D={platforms,captions:null,notes:"",branch:"",specialist:"",handle:"",keyword:"",mention:""};
       let r2,err="";
@@ -2353,7 +2377,7 @@ async function sync(){
       const captions=cleanCaptions({captions:r2.captions});
       const when=nextFree(settings.slots||DEFAULT_SLOTS,taken); taken.add(when);
       try{
-        await db.collection("posts").doc(f.id).set({driveId:f.id,filename:name,kind,fileSize:Number(f.fileSize||0),thumb:pv.thumb,driveModified:f.modifiedTime||nowIso,driveState:"ok",revision:"",
+        await db.collection("posts").doc(f.id).set({driveId:f.id,filename:name,kind,fileSize:Number(f.fileSize||0),thumb:pv.thumb,coverId:cv?cv.id:"",coverModified:cv?(cv.modifiedTime||""):"",driveModified:f.modifiedTime||nowIso,driveState:"ok",revision:"",
           platforms,captions,caption:joinCaption(captions.instagram),hashtags:captions.instagram.hashtags,altText:r2.alt_text||"",strategy:r2.strategy||"",keyword:r2.keyword||"",onScreen:r2.onScreen||"",
           audit:r2.audit||{},branch:"",specialist:"",handle:"",mention:"",notes:"",status:"draft",scheduledAt:when,error:err,createdAt:nowIso,updatedAt:nowIso});
         added++;
@@ -2367,7 +2391,9 @@ async function sync(){
     if(added) parts.push(`Added ${added} new post${added===1?"":"s"}`);
     if(updated) parts.push(`refreshed ${updated} revised file${updated===1?"":"s"} (captions kept, flagged for a check)`);
     if(r.missing.length) parts.push(`${r.missing.length} file${r.missing.length===1?" was":"s were"} removed from Drive`);
+    if(covered) parts.push(`updated ${covered} thumbnail${covered===1?"":"s"} from cover images`);
     let msg=parts.length?parts.join(", ")+".":"Everything is up to date.";
+    msg=msg.charAt(0).toUpperCase()+msg.slice(1);
     if(more>0) msg+=` ${more} more new file${more===1?"":"s"} waiting, click Sync again.`;
     if(skipped.length) msg+=` Skipped: ${skipped.join("; ")}.`;
     if(added) msg+=" Add the specialist, branch and keyword to each new post, then run Audit & optimise.";
