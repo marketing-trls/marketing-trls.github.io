@@ -215,7 +215,7 @@ label{font-size:11.5px;margin-bottom:7px}
 .howto li{counter-increment:h;display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 12px;align-items:start}
 .howto li::before{content:counter(h);grid-row:span 2;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--mint);color:var(--mint-text);font-size:13px;font-weight:700}
 .howto li>span{font-weight:600}
-.savebar{position:sticky;bottom:0;z-index:2;box-shadow:0 -8px 20px rgba(60,50,30,.08);display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border-top:1px solid var(--line);margin:0 -20px -20px;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-radius:0 0 16px 16px}
+.savebar{position:static;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border-top:1px solid var(--line);margin:0 -20px -20px;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-radius:0 0 16px 16px}
 .savebar .toast{flex:1 1 200px}
 .pk-done[aria-pressed="true"]{background:var(--mint);color:var(--mint-ink);border-color:var(--mint-text)}
 .plat.isdone .copybox,.plat.isdone .gbp-grid{opacity:.55}
