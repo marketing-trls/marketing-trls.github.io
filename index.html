@@ -1325,32 +1325,84 @@ label{font-size:11.5px;margin-bottom:7px}
 (function(){
   if(window.claude) return;
   window.__SITE=true;
+  /* Site settings (data/site-config.json): Google sign-in client, Drive folder and the salon's helper (shared plan + captions). */
+  let cfg={};
+  const cfgLoaded=fetch("data/site-config.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(c=>{ cfg=c||{}; cfg.helperUrl=cfg.helperUrl||cfg.captionsUrl||""; if(cfg.googleClientId) loadGsi().catch(()=>{ gsi=null; }); return cfg; });
+  window.__SITE_CFG=()=>cfg;
+  const helper=path=>new URL(path,cfg.helperUrl.replace(/\/?$/,"/")).href;
+
+  /* Edits not yet saved for everyone wait here (this browser), then go to the helper. Without a helper they stay here. */
   const KEY="trs-planner-site-v1";
   let over; try{ over=JSON.parse(localStorage.getItem(KEY)||"null"); }catch{ over=null; }
   over=over&&typeof over==="object"?over:{};
   over.posts=over.posts||{}; over.campaigns=over.campaigns||{};
-  let base={posts:[]};
+  let base={posts:[]}, remote={posts:{},campaigns:{},settings:null};
+  const state={shared:false,saving:false,needsSignin:false,error:"",remoteOk:false};
+  window.__SITE_STATE=state;
+  async function fetchRemote(){
+    try{ const r=await fetch(helper("plan"),{cache:"no-store"}); if(!r.ok) throw 0; const j=await r.json();
+      remote={posts:j.posts||{},campaigns:j.campaigns||{},settings:j.settings||null}; state.remoteOk=true; state.error=""; return true; }
+    catch{ state.remoteOk=false; state.error="offline"; return false; }
+  }
   const loaded=(async()=>{
+    await cfgLoaded; state.shared=!!cfg.helperUrl;
     let d=null;
     try{ const r=await fetch("data/posts.json",{cache:"no-store"}); if(r.ok) d=await r.json(); }catch{}
     if(!d){ try{ d=JSON.parse(document.getElementById("planData").textContent); window.__SITE_BUILTIN=true; }catch{} }
     base=d||{posts:[]}; window.__SITE_DATA=base;
+    if(state.shared) await fetchRemote();
   })();
   const persist=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(over)); window.__SITE_SAVED_ERR=false; }catch{ window.__SITE_SAVED_ERR=true; } };
   const listeners={posts:[],campaigns:[],settings:[]};
   const merged=coll=>{
-    const src=coll==="posts"?(base.posts||[]):(base.campaigns||[]), o=over[coll], out=new Map();
+    const src=coll==="posts"?(base.posts||[]):(base.campaigns||[]), out=new Map();
     src.forEach(d=>{ if(d&&d.id) out.set(d.id,{...d}); });
-    Object.entries(o).forEach(([id,v])=>{ if(v===null) out.delete(id); else out.set(id,{...(out.get(id)||{}),...v}); });
-    return [...out.entries()].map(([id,d])=>{ const {id:_,...rest}=d; return {id,data:()=>({...rest})}; });
+    Object.entries(remote[coll]||{}).forEach(([id,v])=>{ if(!v||v.__deleted) out.delete(id); else out.set(id,{...(out.get(id)||{}),...v}); });
+    Object.entries(over[coll]).forEach(([id,v])=>{ if(v===null) out.delete(id); else out.set(id,{...(out.get(id)||{}),...v}); });
+    return [...out.entries()].map(([id,d])=>{ const {id:_,updatedBy:__,...rest}=d; return {id,data:()=>({...rest})}; });
   };
-  const settingsDoc=()=>({...{branches:base.branches||"",hours:base.hours||"",folderId:(cfg&&cfg.driveFolderId)||""},...(over.settings||{})});
+  const settingsDoc=()=>({...{branches:base.branches||"",hours:base.hours||"",folderId:(cfg&&cfg.driveFolderId)||""},...(remote.settings||{}),...(over.settings||{})});
   /* like the real database, tell listeners after the write has returned */
   const fire=coll=>setTimeout(()=>listeners[coll].forEach(f=>{ try{ f(); }catch(e){ console.error(e); } }),0);
+  const fireAll=()=>["posts","campaigns","settings"].forEach(fire);
+  const pendingCount=()=>Object.keys(over.posts).length+Object.keys(over.campaigns).length+(over.settings?1:0);
+
+  /* save waiting edits for everyone */
+  let flushTimer=null;
+  const queueFlush=()=>{ if(!state.shared) return; clearTimeout(flushTimer); flushTimer=setTimeout(()=>flush(false),250); };
+  async function flush(fromButton){
+    if(!state.shared||state.saving||!pendingCount()) return;
+    state.saving=true; fire("posts");
+    try{
+      const t=await token();
+      const ops=[]; ["posts","campaigns"].forEach(c=>Object.entries(over[c]).forEach(([id,v])=>ops.push({coll:c,id,op:v===null?"delete":"update",data:v,sent:JSON.stringify(v)})));
+      if(over.settings) ops.push({coll:"settings",op:"update",data:over.settings,sent:JSON.stringify(over.settings)});
+      for(let i=0;i<ops.length;i+=40){
+        const batch=ops.slice(i,i+40);
+        let r; try{ r=await fetch(helper("save"),{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+t},body:JSON.stringify({ops:batch.map(({sent,...o})=>o)})}); }catch{ throw {code:"site_net"}; }
+        if(r.status===401){ tok=null; try{ sessionStorage.removeItem("trs-google-token-v2"); }catch{} throw {code:"site_signin"}; }
+        if(r.status===403) throw {code:"site_forbidden"};
+        if(!r.ok) throw {code:"site_api"};
+        const j=await r.json(), sv=j.saved||{};
+        batch.forEach(o=>{
+          if(o.coll==="settings"){ if(sv.settings) remote.settings=sv.settings; if(JSON.stringify(over.settings)===o.sent) delete over.settings; return; }
+          const doc=(sv[o.coll]||{})[o.id]; if(doc) remote[o.coll][o.id]=doc;
+          if(JSON.stringify(over[o.coll][o.id])===o.sent) delete over[o.coll][o.id];
+        });
+        persist();
+      }
+      state.needsSignin=false; state.error="";
+    }catch(e){ state.error=e&&e.code||"site_api"; state.needsSignin=state.error==="site_signin"; }
+    finally{ state.saving=false; fireAll(); if(!state.error&&pendingCount()) queueFlush(); }
+  }
+  window.__SITE_SAVE_NOW=()=>flush(true);
+  /* pick up other people's changes when you come back to the tab */
+  window.addEventListener("focus",async()=>{ if(!state.shared||state.saving) return; if(await fetchRemote()) fireAll(); });
+
   const docRef=(coll,id)=>({
-    async set(data){ over[coll][id]={...data}; persist(); fire(coll); },
-    async update(data){ over[coll][id]={...(over[coll][id]||{}),...data}; persist(); fire(coll); },
-    async delete(){ over[coll][id]=null; persist(); fire(coll); }
+    async set(data){ over[coll][id]={...data}; persist(); fire(coll); queueFlush(); },
+    async update(data){ over[coll][id]={...(over[coll][id]||{}),...data}; persist(); fire(coll); queueFlush(); },
+    async delete(){ over[coll][id]=null; persist(); fire(coll); queueFlush(); }
   });
   const db={
     collection(coll){ return {
@@ -1358,18 +1410,17 @@ label{font-size:11.5px;margin-bottom:7px}
       onSnapshot(cb,err){ const f=()=>cb({docs:merged(coll)}); listeners[coll].push(f); loaded.then(f).catch(e=>err&&err(e)); return ()=>{ listeners[coll]=listeners[coll].filter(x=>x!==f); }; }
     }; },
     doc(path){ return {
-      async set(data){ over.settings={...data}; persist(); fire("settings"); },
-      onSnapshot(cb,err){ const f=()=>cb({exists:true,data:settingsDoc}); listeners.settings.push(f); Promise.all([loaded,cfgLoaded]).then(f).catch(e=>err&&err(e)); return ()=>{}; }
+      async set(data){ over.settings={...data}; persist(); fire("settings"); queueFlush(); },
+      onSnapshot(cb,err){ const f=()=>cb({exists:true,data:settingsDoc}); listeners.settings.push(f); loaded.then(f).catch(e=>err&&err(e)); return ()=>{}; }
     }; }
   };
+  window.__SITE_PENDING=pendingCount;
+  if(pendingCount()) loaded.then(()=>queueFlush());
   const downloads={ async save({filename,data}){ const blob=data instanceof Blob?data:new Blob([data],{type:/\.json$/.test(filename)?"application/json":/\.html$/.test(filename)?"text/html":/\.csv$/.test(filename)?"text/csv":"application/octet-stream"});
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); } };
 
   /* Google Drive on the website: sign in with Google in the browser and read the upload folder through the Drive API.
      Needs an OAuth client ID in data/site-config.json (googleClientId). The access token stays in this tab only. */
-  let cfg={};
-  const cfgLoaded=fetch("data/site-config.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(c=>{ cfg=c||{}; if(cfg.googleClientId) loadGsi().catch(()=>{ gsi=null; }); return cfg; });
-  window.__SITE_CFG=()=>cfg;
   const SCOPE="openid email https://www.googleapis.com/auth/drive.readonly";
   let gsi=null, tok=null;
   try{ const t=JSON.parse(sessionStorage.getItem("trs-google-token-v2")||"null"); if(t&&t.exp>Date.now()+60e3) tok=t; }catch{}
@@ -1418,7 +1469,7 @@ label{font-size:11.5px;margin-bottom:7px}
     throw {code:"tool_error",message:"not available on the website"};
   } };
 
-  /* AI captions on the website. If the salon's captions helper is set up (captionsUrl in data/site-config.json),
+  /* AI captions on the website. If the salon helper is set up (helperUrl in data/site-config.json),
      Claude writes straight away for anyone signed in with a @tararosesalon.com Google account; the API key lives only in the helper.
      Otherwise: copy the prompt into Meta AI, ChatGPT or Claude and paste the reply back. */
   const toB64=blob=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(",")[1]||""); fr.onerror=rej; fr.readAsDataURL(blob); });
@@ -1432,7 +1483,7 @@ label{font-size:11.5px;margin-bottom:7px}
     const images=[];
     for(const img of (opts&&opts.images)||[]){ try{ images.push({media_type:img.type||"image/jpeg",data:await toB64(img)}); }catch{} }
     let r;
-    try{ r=await fetch(cfg.captionsUrl,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+t},body:JSON.stringify({prompt,images})}); }catch{ throw {code:"site_net"}; }
+    try{ r=await fetch(helper("captions"),{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+t},body:JSON.stringify({prompt,images})}); }catch{ throw {code:"site_net"}; }
     if(r.status===401){ tok=null; try{ sessionStorage.removeItem("trs-google-token-v2"); }catch{} throw {code:"site_signin"}; }
     if(r.status===403) throw {code:"site_forbidden"};
     if(r.status===429) throw {code:"rate_limited"};
@@ -1462,9 +1513,9 @@ label{font-size:11.5px;margin-bottom:7px}
       q("[data-copy]").focus({preventScroll:true});
     });
   }
-  const sample={ get manual(){ return !cfg.captionsUrl; }, async limits(){ return {images:true}; },
-    async json(prompt,opts){ await cfgLoaded; return cfg.captionsUrl?viaHelper(prompt,opts):viaPaste(prompt,opts); } };
-  window.__SITE_HAS_EDITS=()=>Object.keys(over.posts).length+Object.keys(over.campaigns).length+(over.settings?1:0);
+  const sample={ get manual(){ return !cfg.helperUrl; }, async limits(){ return {images:true}; },
+    async json(prompt,opts){ await cfgLoaded; return cfg.helperUrl?viaHelper(prompt,opts):viaPaste(prompt,opts); } };
+  window.__SITE_HAS_EDITS=pendingCount;
   window.__SITE_RESET=()=>{ try{ localStorage.removeItem(KEY); }catch{} location.reload(); };
   window.claude={ async use(name){ if(name==="db") return db; if(name==="downloads") return downloads; if(name==="user") return {can:async()=>true}; if(name==="mcp") return mcp; if(name==="sample") return sample; return null; } };
 })();
@@ -1664,11 +1715,24 @@ try{ const t=localStorage.getItem("trs-plat"); if(GRIDKEYS.includes(t)) plat=t; 
 
 const PLANNER_URL="https://claude.ai/artifact/GqxxJ3x78eCTU6BkGGNswm";
 function siteStatus(){
-  const n=window.__SITE_HAS_EDITS?window.__SITE_HAS_EDITS():0;
+  const st=window.__SITE_STATE||{}, n=window.__SITE_HAS_EDITS?window.__SITE_HAS_EDITS():0;
+  const capLine=`Captions: <b>Write all captions with AI</b> or <b>Audit &amp; optimise</b> in the editor.`;
+  if(st.shared){
+    let msg, btn="";
+    if(st.saving) msg=`<b>Saving…</b>`;
+    else if(!n) msg=st.remoteOk?`<b>✓ Saved for everyone.</b> Changes you make here go live straight away. ${capLine}`:`<b>Could not reach the shared plan</b>, so this is the last published copy. Try again in a minute.`;
+    else if(st.error==="site_signin"||st.needsSignin){ msg=`<b>${n} change${n===1?"":"s"} not saved yet.</b> Sign in with your salon Google account to save for everyone.`; btn="Sign in and save"; }
+    else if(st.error==="site_forbidden"){ msg=`<b>${n} change${n===1?"":"s"} not saved.</b> Only @tararosesalon.com Google accounts can save. Sign in with your salon account.`; btn="Try again"; }
+    else if(st.error){ msg=`<b>${n} change${n===1?"":"s"} not saved yet.</b> The connection dropped.`; btn="Try again"; }
+    else msg=`<b>Saving ${n} change${n===1?"":"s"}…</b>`;
+    setStatus(`<span class="site-note">${msg}</span>${btn?`<span class="bar"><button id="siteSave">${btn}</button></span>`:""}`);
+    const sb=$("#siteSave"); if(sb) sb.onclick=()=>window.__SITE_SAVE_NOW();
+    return;
+  }
   const t=window.__SITE_DATA&&new Date(window.__SITE_DATA.exportedAt);
   const when=t&&!isNaN(t)?t.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Dubai"}):"";
   setStatus(`<span class="site-note"><b>Website planner.</b> Plan published ${esc(when)}${window.__SITE_BUILTIN?" (built-in copy)":""}. ${n?`You have <b>${n} edit${n===1?"":"s"}</b> saved in this browser only.`:"Edits you make here save in this browser."}
-    ${window.__SITE_DRIVE_CONNECTED&&window.__SITE_DRIVE_CONNECTED()?"Google Drive is connected.":"Use <b>Sync with Drive</b> to pull new photos (you sign in to Google the first time)."} Captions: use <b>Write all captions with AI</b> or <b>Audit &amp; optimise</b> in the editor.</span>
+    ${window.__SITE_DRIVE_CONNECTED&&window.__SITE_DRIVE_CONNECTED()?"Google Drive is connected.":"Use <b>Sync with Drive</b> to pull new photos (you sign in to Google the first time)."} ${capLine}</span>
     ${n?`<span class="bar"><button class="ghost" id="siteExport">Export for website</button><button class="ghost" id="siteReset">Discard my edits</button></span>`:""}${window.__SITE_SAVED_ERR?`<span class="site-err">This browser is full, so the last edit was not kept. Export now.</span>`:""}`);
   const ex=$("#siteExport"); if(ex) ex.onclick=()=>$("#packExport").click();
   const rs=$("#siteReset"); if(rs) rs.onclick=()=>{ if(rs.dataset.c!=="1"){ rs.dataset.c="1"; rs.textContent="Click again to discard"; setTimeout(()=>{rs.dataset.c="";rs.textContent="Discard my edits";},4000); return; } window.__SITE_RESET(); };
