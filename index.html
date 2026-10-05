@@ -385,6 +385,10 @@ label{font-size:11.5px;margin-bottom:7px}
 .ai-sheet textarea{width:100%;min-height:120px}
 .ai-key summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--mint-text);text-transform:none;letter-spacing:0;font-family:var(--sans)}
 .ai-key p{margin:8px 0}
+.tile .ph{padding:34px 8px 52px}
+.tile .ph .ph-tip{display:inline-block;font-size:11px;font-weight:700;color:var(--warn);background:var(--warn-fill);border-radius:99px;padding:2px 9px;margin-top:6px}
+.cover-tip{margin-top:8px;font-size:13.5px;background:var(--warn-fill);color:var(--warn-on);border-radius:10px;padding:8px 11px}
+.cover-tip b{word-break:break-word}
 
 /* website mode */
 .notice .site-note a{color:var(--mint)}
@@ -1787,7 +1791,7 @@ function render(){
   }else{
     g.innerHTML=list.map(p=>{
       const warn=p.status!=="posted"&&problems(p,clashes).length;
-      const img=p.thumb?`<img src="${esc(p.thumb)}" alt="${esc(p.altText||p.filename||"")}">`:`<span class="ph">${p.kind==="video"?"▶ ":""}${esc(p.filename||"Untitled")}</span>`;
+      const img=p.thumb?`<img src="${esc(p.thumb)}" alt="${esc(p.altText||p.filename||"")}">`:`<span class="ph">${p.kind==="video"?"▶ ":""}${esc(p.filename||"Untitled")}<span class="ph-tip">No cover yet</span></span>`;
       return `<button class="tile ${p.id===sel?"sel":""} ${swapFrom&&p.id!==swapFrom?"swap":""}" data-id="${esc(p.id)}" aria-label="${esc((p.filename||"Post")+", "+(STATUS_LABEL[p.status]||p.status)+", "+fmtWhen(p.scheduledAt))}">
         ${img}<span class="st ${esc(p.status)}">${STATUS_ICON[p.status]||""} ${esc(STATUS_LABEL[p.status]||p.status)}</span>${warn?'<span class="dot" title="Needs attention"></span>':""}
         ${p.revision?'<span class="rev">Revised</span>':""}${p.kind==="video"?'<span class="kind">VIDEO</span>':""}${plat==="gbp"?`<span class="kind">${capOf(p,"gbp").posts.length}/${branches().length} branches</span>`:""}
@@ -1833,6 +1837,7 @@ function renderDetail(){
         <div class="pills"><span class="pill ${esc(p.status)}">${STATUS_ICON[p.status]||""} ${esc(STATUS_LABEL[p.status]||p.status)}</span><span class="pill">${esc(fmtWhen(p.scheduledAt))}</span>${p.kind==="video"?'<span class="pill">Video</span>':""}</div>
         <div class="meter" title="${sc}% of optimisation checks passed"><div style="width:${sc}%"></div></div>
         <div class="sub">${sc}% optimised${S.fails&&!S.noPlat?` · ${S.fails} thing${S.fails===1?"":"s"} to fix`:""}</div>
+        ${!p.thumb?`<div class="cover-tip">No cover image yet. Upload <b>${esc(coverName(p))}</b> to the Drive folder, then click Sync with Drive.</div>`:""}
       </div>
     </div>
     ${p.revision||p.driveState==="missing"?`<div class="revbox"><div><strong>Heads up:</strong> ${esc(p.driveState==="missing"?"this file is no longer in the Drive folder. Hide the post or put the file back.":p.revision)}</div>
@@ -2033,7 +2038,7 @@ function openShare(id){
   sheetFor=id; sheetLast=document.activeElement;
   const cur=platformsOf(p), box=$("#sheetBox");
   box.innerHTML=`<div class="sh-top">${p.thumb?`<img src="${esc(p.thumb)}" alt="">`:`<div class="noimg"></div>`}
-      <div><span class="eyebrow">Post to</span><div class="sh-title" id="shTitle">${esc(titleOf(p))}</div><div class="sub">${esc(fmtWhen(p.scheduledAt))}${p.kind==="video"?" · Video":""}</div></div>
+      <div><span class="eyebrow">Post to</span><div class="sh-title" id="shTitle">${esc(titleOf(p))}</div><div class="sub">${esc(fmtWhen(p.scheduledAt))}${p.kind==="video"?" · Video":""}</div>${!p.thumb?`<div class="cover-tip">No cover image yet. Upload <b>${esc(coverName(p))}</b> to the Drive folder, then click Sync with Drive.</div>`:""}</div>
       <button class="ghost sh-x" id="shClose" aria-label="Close">✕</button></div>
     <div><label>Quick picks</label><div class="presets">${PRESETS.map(([l,ks],i)=>`<button class="ghost" data-i="${i}">${esc(l)}</button>`).join("")}</div></div>
     <div class="plist">${SHEET_ORDER.map(k=>`<label class="prow" for="sh-${k}"><input type="checkbox" id="sh-${k}" data-k="${k}" ${cur[k]?"checked":""}>
@@ -2291,11 +2296,13 @@ async function generate(p,mode,isRevision){
 /* Compare the Drive folder with the planner: new, revised and removed files. Reads only. */
 /* Cover images: a photo named like the post's file plus "-cover" (Gloss-reel-cover.jpg for Gloss-reel.mp4)
    becomes that post's thumbnail, and Claude writes the captions from it. It never becomes a post of its own. */
-const stemOf=n=>String(n||"").replace(/\.[^.]+$/,"").trim().toLowerCase();
-const COVER_RE=/[\s_-]*cover$/i;
+/* names match loosely: case, spaces, dots, dashes and underscores do not matter ("first..mp4" matches "first-cover.jpg") */
+const stemOf=n=>String(n||"").replace(/\.[^.\s]+$/,"").toLowerCase().replace(/[\s._-]+/g," ").trim();
+const COVER_RE=/(?:^|\s)cover$/i;
 const isCover=f=>kindOf(f)==="image"&&COVER_RE.test(stemOf(f.title||f.name));
-function coverMap(files){ const m=new Map(); files.filter(isCover).forEach(f=>{ const k=stemOf(f.title||f.name).replace(COVER_RE,""); const o=m.get(k); if(!o||String(f.modifiedTime||"")>String(o.modifiedTime||"")) m.set(k,f); }); return m; }
+function coverMap(files){ const m=new Map(); files.filter(isCover).forEach(f=>{ const k=stemOf(f.title||f.name).replace(COVER_RE,"").trim(); if(!k) return; const o=m.get(k); if(!o||String(f.modifiedTime||"")>String(o.modifiedTime||"")) m.set(k,f); }); return m; }
 const coverFor=(covers,f)=>covers.get(stemOf(f.title||f.name))||null;
+const coverName=p=>String(p.filename||"post").replace(/\.[^.\s]+$/,"").replace(/[\s.]+$/,"")+"-cover.jpg";
 async function thumbFor(f,kind,cover){
   if(cover){ try{ const pv=await preview(cover,"image"); if(pv.thumb) return pv; }catch(e){ if(typeof e?.code==="string"&&e.code!=="tool_error") throw e; } }
   return preview(f,kind);
